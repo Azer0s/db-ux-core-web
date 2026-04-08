@@ -1,0 +1,39 @@
+{
+    "compilerOptions": {
+        "strict": false,
+        "allowUnreachableCode": false,
+        "allowSyntheticDefaultImports": true,
+        "declaration": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "esModuleInterop": true,
+        "lib": [
+            "es2022"
+        ],
+        "module": "es2015",
+        "moduleResolution": "node",
+        "noImplicitAny": false,
+        "noImplicitReturns": false,
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
+        "outDir": "dist",
+        "removeComments": false,
+        "sourceMap": true,
+        "jsx": "react-native",
+        "target": "es2015",
+        "skipLibCheck": true
+    },
+    "include": [
+        "src/**/*.ts",
+        "src/**/*.tsx"
+    ],
+    "exclude": [
+        "node_modules",
+        "src/**/*.spec.tsx",
+        "src/**/*.example.tsx",
+        "src/**/*.showcase.tsx",
+        "src/**/*.arg.types.ts"
+    ],
+    "compileOnSave": false,
+    "buildOnSave": false
+}

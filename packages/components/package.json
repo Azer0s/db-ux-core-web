@@ -25,6 +25,7 @@
     "build:mitosis": "mitosis build --config configs/mitosis.config.cjs",
     "compile:angular": "mitosis build --config configs/angular/mitosis.config.cjs && tsx scripts/exec/angular.ts && cpr ../../output/tmp/angular/src ../../output/angular/src --overwrite",
     "compile:react": "mitosis build --config configs/react/mitosis.config.cjs && tsx scripts/exec/react.ts && cpr ../../output/tmp/react/src ../../output/react/src --overwrite",
+    "compile:react-native": "mitosis build --config configs/react-native/mitosis.config.cjs && tsx scripts/exec/react-native.ts",
     "compile:stencil": "mitosis build --config configs/stencil/mitosis.config.cjs && tsx scripts/exec/stencil.ts && cpr ../../output/tmp/stencil/src ../../output/stencil/src --overwrite",
     "compile:vue": "mitosis build --config configs/vue/mitosis.config.cjs && tsx scripts/exec/vue.ts && cpr ../../output/tmp/vue/src ../../output/vue/src --overwrite",
     "copy-assets": "cpr ../foundations/assets build/assets -o",
