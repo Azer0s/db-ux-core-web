@@ -322,42 +322,17 @@ export default DBNavigation;
 
 	/* ---- DBNavigationItem → direct alias of Tabs.Screen ---- */
 	'navigation-item/navigation-item.tsx': `/**
- * DBNavigationItem is a direct alias of expo-router Tabs.Screen.
- * This is required because expo-router checks \`child.type === Tabs.Screen\`
- * at runtime — any wrapper component would be silently ignored.
+ * DBNavigationItem is a direct re-export of expo-router Tabs.Screen.
+ *
+ * expo-router performs a strict reference check (child.type === Tabs.Screen)
+ * so this MUST be the exact same object — no wrapper component is possible.
  *
  * Usage:
  *   <DBNavigationItem name="my_screen" options={{ title: "My Screen" }} />
- *
- * Convenience props:
- *   label  — shorthand for options.title
- *   text   — shorthand for options.title (fallback)
  */
 import { Tabs } from "expo-router";
-import React from "react";
 
-type DBNavigationItemProps = React.ComponentProps<typeof Tabs.Screen> & {
-  /** Shorthand for options.title */
-  label?: string;
-  /** Shorthand for options.title (fallback) */
-  text?: string;
-};
-
-function DBNavigationItem({ label, text, options, ...rest }: DBNavigationItemProps) {
-  return (
-    <Tabs.Screen
-      {...rest}
-      options={{
-        title: label ?? text ?? options?.title ?? rest.name,
-        ...options,
-      }}
-    />
-  );
-}
-
-// Assign Tabs.Screen's displayName so expo-router's child-type check passes
-(DBNavigationItem as any).displayName = (Tabs.Screen as any).displayName;
-
+const DBNavigationItem = Tabs.Screen;
 export default DBNavigationItem;
 `,
 
@@ -2064,6 +2039,46 @@ function copyAndTransformDir(srcDir: string, destDir: string) {
 }
 
 // ---------------------------------------------------------------------------
+// Example-file cleanup + spec purge
+// ---------------------------------------------------------------------------
+
+import { unlinkSync } from 'node:fs';
+
+function cleanExamplesAndPurgeSpecs(rootDir: string) {
+	let examplesCleaned = 0;
+	let specsPurged = 0;
+
+	function walk(dir: string) {
+		if (!existsSync(dir)) return;
+		for (const entry of readdirSync(dir, { withFileTypes: true })) {
+			const fullPath = join(dir, entry.name);
+			if (entry.isDirectory()) {
+				walk(fullPath);
+			} else if (entry.name.endsWith('.spec.ts') || entry.name.endsWith('.spec.tsx') || entry.name.endsWith('.test.ts') || entry.name.endsWith('.test.tsx')) {
+				unlinkSync(fullPath);
+				specsPurged++;
+			} else if (entry.name.endsWith('.example.tsx') || entry.name.endsWith('.example.ts') ||
+			entry.name.endsWith('.showcase.tsx') || entry.name.endsWith('.showcase.ts')) {
+				let src = readFileSync(fullPath, 'utf-8');
+				// Remove className prop (no meaning in RN)
+				src = src.replace(/\s+className="[^"]*"/g, '');
+				src = src.replace(/\s+className=\{[^}]*\}/g, '');
+				// Convert WAI-ARIA role= to accessibilityRole= (only plain string values)
+				src = src.replace(/\brole="([^"]+)"/g, 'accessibilityRole="$1"');
+				// Remove HTMLInputElement / HTMLElement type casts in examples
+				src = src.replace(/ as HTML\w+Element/g, '');
+				src = src.replace(/\(event\.target as HTML\w+Element\)\./g, '(event as any).');
+				writeFileSync(fullPath, src, 'utf-8');
+				examplesCleaned++;
+			}
+		}
+	}
+
+	walk(rootDir);
+	console.log(`  [examples] cleaned ${examplesCleaned} example files, purged ${specsPurged} spec files`);
+}
+
+// ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
 
@@ -2143,6 +2158,11 @@ export const getRootProps = (_props: any, _filter?: string[]): Record<string, un
 			writeFileSync(destFile, content, 'utf-8');
 			console.log(`  [override] ${relPath}`);
 		}
+
+		// -----------------------------------------------------------------------
+		// Post-process example files and purge spec/test files
+		// -----------------------------------------------------------------------
+		cleanExamplesAndPurgeSpecs(RN_DEST);
 
 		console.log('[RN] Done.');
 	} catch (err) {
