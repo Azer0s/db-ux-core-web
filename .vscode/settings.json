@@ -4,5 +4,11 @@
 	"editor.formatOnSave": true,
 	"files.associations": {
 		".env.template": "dotenv"
+	},
+	"[jsonc]": {
+		"editor.defaultFormatter": "vscode.json-language-features"
+	},
+	"[typescriptreact]": {
+		"editor.defaultFormatter": "vscode.typescript-language-features"
 	}
 }
