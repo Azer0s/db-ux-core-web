@@ -1,0 +1,32 @@
+---
+name: Build React Native
+
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    outputs:
+      artifact:
+        description: "Name of the uploaded artifact"
+        value: db-ux-react-native-src
+
+jobs:
+  build-react-native:
+    name: Build React Native
+    runs-on: ubuntu-24.04
+    steps:
+      - name: ⏬ Checkout repo
+        uses: actions/checkout@v6
+
+      - name: 🔄 Init Cache
+        uses: ./.github/actions/npm-cache
+
+      - name: 🔨 Build React Native output
+        run: npm -w @db-ux/core-components run compile:react-native
+
+      - name: ⏫ Upload React Native src
+        uses: actions/upload-artifact@v7
+        with:
+          name: db-ux-react-native-src
+          path: output/react-native/src

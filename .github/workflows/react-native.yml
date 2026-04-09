@@ -1,0 +1,32 @@
+---
+name: React Native
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - "packages/components/src/**"
+      - "packages/components/scripts/post-build/react-native.ts"
+      - "packages/components/configs/react-native/**"
+      - "output/react-native/package.json"
+      - "output/react-native/tsconfig.json"
+      - ".github/workflows/react-native.yml"
+      - ".github/workflows/01-build-react-native.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/components/src/**"
+      - "packages/components/scripts/post-build/react-native.ts"
+      - "packages/components/configs/react-native/**"
+      - "output/react-native/package.json"
+      - "output/react-native/tsconfig.json"
+      - ".github/workflows/react-native.yml"
+      - ".github/workflows/01-build-react-native.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: ./.github/workflows/01-build-react-native.yml
