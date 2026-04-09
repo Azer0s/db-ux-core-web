@@ -90,9 +90,9 @@ import * as Linking from "expo-linking";`
 	// span → View
 	[/<span\b([^>]*)>/g, '<View$1>'],
 	[/<\/span>/g, '</View>'],
-	// button → TouchableOpacity
-	[/<button\b([^>]*)>/g, '<TouchableOpacity$1>'],
-	[/<\/button>/g, '</TouchableOpacity>'],
+	// button → Pressable
+	[/<button\b([^>]*)>/g, '<Pressable$1>'],
+	[/<\/button>/g, '</Pressable>'],
 	// input (self-closing) → TextInput
 	[/<input\b([^/>]*)\/?>/g, '<TextInput$1/>'],
 	// textarea → TextInput multiline
@@ -101,9 +101,9 @@ import * as Linking from "expo-linking";`
 	// label → Text
 	[/<label\b([^>]*)>/g, '<Text$1>'],
 	[/<\/label>/g, '</Text>'],
-	// anchor → TouchableOpacity
-	[/<a\b([^>]*)>/g, '<TouchableOpacity$1>'],
-	[/<\/a>/g, '</TouchableOpacity>'],
+	// anchor → Pressable
+	[/<a\b([^>]*)>/g, '<Pressable$1>'],
+	[/<\/a>/g, '</Pressable>'],
 	// dialog → Modal
 	[/<dialog\b([^>]*)>/g, '<Modal$1>'],
 	[/<\/dialog>/g, '</Modal>'],
@@ -253,6 +253,107 @@ export type GeneralKeyboardEvent<_T> = GestureResponderEvent;
 `;
 
 // ---------------------------------------------------------------------------
+// DB design tokens for React Native
+// ---------------------------------------------------------------------------
+
+const DB_TOKENS_FILE = `/**
+ * DB UX Design System – React Native design tokens
+ * Sourced from @db-ux/db-theme absolute CSS variables.
+ * Import in your app: import { DBColors, DBTypography, DBSpacing } from "@db-ux/react-native-core-components/src/shared/tokens";
+ */
+
+/** Neutral (grey) scale — 0 = darkest, 14 = white */
+export const DBColors = {
+  neutral: {
+    0: '#0d0e11',
+    1: '#16181b',
+    2: '#222428',
+    3: '#2e3036',
+    4: '#3b3e44',
+    5: '#484b53',
+    6: '#5a5e68',
+    7: '#727782',
+    8: '#8a919e',
+    9: '#a6abb6',
+    10: '#c3c7ce',
+    11: '#e1e2e6',
+    12: '#edeef0',
+    13: '#f3f3f5',
+    14: '#ffffff',
+    /** Border / neutral origin */
+    origin: '#646973',
+  },
+  /** DB brand red */
+  brand: {
+    origin: '#ec0016',
+    dark: '#c00010',
+    light: '#ff5357',
+    extraLight: '#ffdada',
+  },
+  /** Informational (blue) */
+  informational: {
+    origin: '#257fa8',
+    dark: '#1b6586',
+    light: '#2e9acb',
+    extraLight: '#cae6fd',
+  },
+  /** Successful (green) */
+  successful: {
+    origin: '#63a615',
+    dark: '#4e850f',
+    light: '#72bf1a',
+    extraLight: '#c3ff9d',
+  },
+  /** Warning (amber) */
+  warning: {
+    origin: '#f39200',
+    dark: '#ad6600',
+    light: '#f69400',
+    extraLight: '#ffdbc8',
+  },
+  /** Critical — same hue as brand red */
+  critical: {
+    origin: '#ec0016',
+    dark: '#c00010',
+    light: '#ff5357',
+    extraLight: '#ffdada',
+  },
+} as const;
+
+export const DBTypography = {
+  size3XS: 11,
+  size2XS: 12,
+  sizeXS: 13,
+  sizeSM: 14,
+  sizeMD: 16,
+  sizeLG: 20,
+  sizeXL: 24,
+  weightRegular: '400' as const,
+  weightMedium: '500' as const,
+  weightBold: '700' as const,
+  lineHeightSM: 18,
+  lineHeightMD: 20,
+  lineHeightLG: 24,
+} as const;
+
+export const DBSpacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  xxl: 32,
+} as const;
+
+export const DBBorderRadius = {
+  sm: 4,
+  md: 8,
+  lg: 12,
+  full: 9999,
+} as const;
+`;
+
+// ---------------------------------------------------------------------------
 // Per-component manual implementations using Expo APIs
 // ---------------------------------------------------------------------------
 
@@ -383,7 +484,7 @@ export default DBIcon;
 
 	/* ---- DBLink → expo-linking ---- */
 	'link/link.tsx': `import React, { forwardRef } from "react";
-import { Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Text, Pressable, View, StyleSheet } from "react-native";
 import * as Linking from "expo-linking";
 import { DBLinkProps } from "./model";
 
@@ -397,32 +498,33 @@ function DBLinkFn(props: DBLinkProps, component: any) {
   }
 
   return (
-    <TouchableOpacity
+    <Pressable
       ref={component}
       onPress={handlePress}
       disabled={Boolean(props.disabled)}
       accessibilityRole="link"
       accessibilityLabel={props.text ?? String(props.children ?? "")}
+      style={({ pressed }) => [pressed && { opacity: 0.7 }]}
     >
       <Text style={[styles.link, Boolean(props.disabled) && styles.disabled]}>
         {props.text ?? props.children}
       </Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  link: { color: "#0070cc", textDecorationLine: "underline" },
-  disabled: { color: "#aaa", textDecorationLine: "none" }
+  link: { color: "#257fa8", textDecorationLine: "underline" },
+  disabled: { color: "#a6abb6", textDecorationLine: "none" }
 });
 
-const DBLink = forwardRef<TouchableOpacity, DBLinkProps>(DBLinkFn);
+const DBLink = forwardRef<View, DBLinkProps>(DBLinkFn);
 export default DBLink;
 `,
 
-	/* ---- DBButton → TouchableOpacity + expo-haptics ---- */
+	/* ---- DBButton → Pressable + expo-haptics ---- */
 	'button/button.tsx': `import React, { forwardRef } from "react";
-import { TouchableOpacity, Text, View, StyleSheet } from "react-native";
+import { Pressable, Text, View, StyleSheet } from "react-native";
 import * as Haptics from "expo-haptics";
 import { DBButtonProps } from "./model";
 
@@ -435,30 +537,35 @@ function DBButtonFn(props: DBButtonProps, component: any) {
   const label = props.text ?? props.children;
 
   return (
-    <TouchableOpacity
+    <Pressable
       ref={component}
       onPress={handlePress}
       disabled={Boolean(props.disabled)}
       accessibilityRole="button"
       accessibilityLabel={typeof label === "string" ? label : undefined}
       accessibilityState={{ disabled: Boolean(props.disabled) }}
-      style={[
+      style={({ pressed }) => [
         styles.button,
         props.variant === "filled" && styles.filled,
         props.variant === "ghost" && styles.ghost,
         props.variant === "brand" && styles.brand,
         Boolean(props.disabled) && styles.buttonDisabled,
-        props.width === "full" && styles.fullWidth
+        props.width === "full" && styles.fullWidth,
+        pressed && !Boolean(props.disabled) && { opacity: 0.75 }
       ]}
     >
       {typeof label === "string" ? (
-        <Text style={[styles.label, Boolean(props.disabled) && styles.labelDisabled]}>
+        <Text style={[
+          styles.label,
+          (props.variant === "filled" || props.variant === "brand") && styles.labelInverted,
+          Boolean(props.disabled) && styles.labelDisabled
+        ]}>
           {label}
         </Text>
       ) : (
         label
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -471,16 +578,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: "#646973",
     backgroundColor: "transparent"
   },
-  filled: { backgroundColor: "#333", borderColor: "#333" },
+  filled: { backgroundColor: "#2e3036", borderColor: "#2e3036" },
   ghost: { borderColor: "transparent" },
   brand: { backgroundColor: "#ec0016", borderColor: "#ec0016" },
   buttonDisabled: { opacity: 0.4 },
   fullWidth: { width: "100%" },
-  label: { fontSize: 14, color: "#333", fontWeight: "500" },
-  labelDisabled: { color: "#aaa" }
+  label: { fontSize: 14, color: "#2e3036", fontWeight: "500" },
+  labelInverted: { color: "#ffffff" },
+  labelDisabled: { color: "#a6abb6" }
 });
 
 const DBButton = forwardRef<View, DBButtonProps>(DBButtonFn);
@@ -548,7 +656,7 @@ function DBHeaderFn(props: DBHeaderProps, component: any) {
         <View style={styles.actions}>
           {props.primaryAction}
           {props.secondaryAction}
-          <DBButton variant="ghost" noText icon="menu" onPress={handleToggle}>
+          <DBButton variant="ghost" noText icon="menu" onClick={handleToggle}>
             {props.burgerMenuLabel ?? "Menu"}
           </DBButton>
         </View>
@@ -566,14 +674,14 @@ function DBHeaderFn(props: DBHeaderProps, component: any) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { backgroundColor: "#fff" },
+  safeArea: { backgroundColor: "#ffffff" },
   header: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#ccc"
+    borderBottomColor: "#e1e2e6"
   },
   brand: { marginRight: 16 },
   navContainer: { flex: 1 },
@@ -589,7 +697,7 @@ export default DBHeader;
 import {
   Modal,
   View,
-  TouchableOpacity,
+  Pressable,
   Text,
   ScrollView,
   StyleSheet
@@ -632,20 +740,20 @@ function DBDrawerFn(props: DBDrawerProps, component: any) {
       onRequestClose={() => props.onClose?.()}
     >
       <View style={styles.overlay} ref={component}>
-        <TouchableOpacity
+        <Pressable
           style={styles.backdrop}
-          activeOpacity={1}
           onPress={() => props.backdrop !== "none" && props.onClose?.()}
         />
         <Animated.View style={[styles.drawer, animatedStyle]}>
           <View style={styles.drawerHeader}>
-            <TouchableOpacity
+            <Pressable
               onPress={() => props.onClose?.()}
               accessibilityLabel={props.closeButtonText ?? "Close"}
               accessibilityRole="button"
+              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
             >
               <Text style={styles.closeBtn}>✕</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <ScrollView style={styles.content}>{props.children}</ScrollView>
         </Animated.View>
@@ -663,7 +771,7 @@ const styles = StyleSheet.create({
   },
   drawer: {
     width: 320,
-    backgroundColor: "#fff",
+    backgroundColor: "#ffffff",
     flexDirection: "column",
     shadowColor: "#000",
     shadowOffset: { width: 2, height: 0 },
@@ -676,9 +784,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "flex-end",
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#e0e0e0"
+    borderBottomColor: "#e1e2e6"
   },
-  closeBtn: { fontSize: 20, color: "#333" },
+  closeBtn: { fontSize: 20, color: "#2e3036" },
   content: { flex: 1, padding: 16 }
 });
 
@@ -692,10 +800,9 @@ import {
   Modal,
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   StyleSheet
 } from "react-native";
-import { BlurView } from "expo-blur";
 import { DBTooltipProps } from "./model";
 
 function DBTooltipFn(props: DBTooltipProps, component: any) {
@@ -718,18 +825,17 @@ function DBTooltipFn(props: DBTooltipProps, component: any) {
 
   return (
     <View style={styles.container} ref={component}>
-      <TouchableOpacity ref={triggerRef} onPress={handlePress}>
+      <Pressable ref={triggerRef} onPress={handlePress}>
         {props.children}
-      </TouchableOpacity>
+      </Pressable>
       <Modal
         visible={visible}
         transparent
         animationType="fade"
         onRequestClose={() => setVisible(false)}
       >
-        <TouchableOpacity
+        <Pressable
           style={StyleSheet.absoluteFill}
-          activeOpacity={1}
           onPress={() => setVisible(false)}
         >
           <View
@@ -742,7 +848,7 @@ function DBTooltipFn(props: DBTooltipProps, component: any) {
               {props.tooltipText ?? props.children}
             </Text>
           </View>
-        </TouchableOpacity>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -752,7 +858,7 @@ const styles = StyleSheet.create({
   container: {},
   tooltip: {
     position: "absolute",
-    backgroundColor: "#333",
+    backgroundColor: "#2e3036",
     borderRadius: 6,
     padding: 10,
     maxWidth: 220,
@@ -762,7 +868,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4
   },
-  tooltipText: { color: "#fff", fontSize: 13, lineHeight: 18 }
+  tooltipText: { color: "#ffffff", fontSize: 13, lineHeight: 18 }
 });
 
 const DBTooltip = forwardRef<View, DBTooltipProps>(DBTooltipFn);
@@ -774,7 +880,7 @@ export default DBTooltip;
 import {
   Modal,
   View,
-  TouchableOpacity,
+  Pressable,
   ScrollView,
   StyleSheet
 } from "react-native";
@@ -802,15 +908,14 @@ function DBPopoverFn(props: DBPopoverProps, component: any) {
         onRequestClose={handleClose}
       >
         <BlurView intensity={20} style={StyleSheet.absoluteFill}>
-          <TouchableOpacity
+          <Pressable
             style={styles.backdrop}
-            activeOpacity={1}
             onPress={handleClose}
           >
             <View style={styles.popover}>
               <ScrollView>{props.children}</ScrollView>
             </View>
-          </TouchableOpacity>
+          </Pressable>
         </BlurView>
       </Modal>
     </View>
@@ -824,7 +929,7 @@ const styles = StyleSheet.create({
     alignItems: "center"
   },
   popover: {
-    backgroundColor: "#fff",
+    backgroundColor: "#ffffff",
     borderRadius: 12,
     padding: 16,
     maxWidth: 320,
@@ -937,7 +1042,7 @@ function DBAccordionItemFn(props: DBAccordionItemProps & {
   return (
     <View style={styles.container} ref={component}>
       <Pressable
-        style={styles.header}
+        style={({ pressed }) => [styles.header, pressed && { backgroundColor: "#f3f3f5" }]}
         onPress={handlePress}
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
@@ -959,7 +1064,7 @@ function DBAccordionItemFn(props: DBAccordionItemProps & {
 const styles = StyleSheet.create({
   container: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#ccc"
+    borderBottomColor: "#e1e2e6"
   },
   header: {
     flexDirection: "row",
@@ -968,8 +1073,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16
   },
-  title: { fontSize: 15, fontWeight: "500", flex: 1 },
-  chevron: { fontSize: 12, color: "#555" },
+  title: { fontSize: 15, fontWeight: "500", flex: 1, color: "#2e3036" },
+  chevron: { fontSize: 12, color: "#5a5e68" },
   body: { overflow: "hidden" },
   bodyInner: { paddingHorizontal: 16, paddingBottom: 14 }
 });
@@ -980,7 +1085,7 @@ export default DBAccordionItem;
 
 	/* ---- DBTabs → expo-router Tabs (same as navigation) ---- */
 	'tabs/tabs.tsx': `import React, { forwardRef, useState, useId } from "react";
-import { View, ScrollView, TouchableOpacity, Text, StyleSheet } from "react-native";
+import { View, ScrollView, Pressable, Text, StyleSheet } from "react-native";
 import * as Haptics from "expo-haptics";
 import { DBSimpleTabProps, DBTabsProps } from "./model";
 
@@ -1012,11 +1117,12 @@ function DBTabsFn(props: DBTabsProps, component: any) {
         showsHorizontalScrollIndicator={false}
       >
         {tabs.map((tab, index) => (
-          <TouchableOpacity
+          <Pressable
             key={String(props.name ?? uuid) + index}
-            style={[
+            style={({ pressed }) => [
               styles.tab,
-              selectedIndex === index && styles.tabActive
+              selectedIndex === index && styles.tabActive,
+              pressed && { opacity: 0.7 }
             ]}
             onPress={() => handleTabPress(index)}
             accessibilityRole="tab"
@@ -1025,7 +1131,7 @@ function DBTabsFn(props: DBTabsProps, component: any) {
             <Text style={[styles.tabText, selectedIndex === index && styles.tabTextActive]}>
               {tab.label}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         ))}
         {props.children}
       </ScrollView>
@@ -1042,17 +1148,17 @@ function DBTabsFn(props: DBTabsProps, component: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  tabBarH: { flexDirection: "row", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#ccc" },
-  tabBarV: { flexDirection: "column", borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: "#ccc" },
+  tabBarH: { flexDirection: "row", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#e1e2e6" },
+  tabBarV: { flexDirection: "column", borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: "#e1e2e6" },
   tab: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 2,
     borderBottomColor: "transparent"
   },
-  tabActive: { borderBottomColor: "#333" },
-  tabText: { fontSize: 14, color: "#666" },
-  tabTextActive: { color: "#333", fontWeight: "600" },
+  tabActive: { borderBottomColor: "#ec0016" },
+  tabText: { fontSize: 14, color: "#5a5e68" },
+  tabTextActive: { color: "#2e3036", fontWeight: "600" },
   panel: { flex: 1, padding: 12 }
 });
 
@@ -1087,6 +1193,8 @@ function DBSwitchFn(props: DBSwitchProps, component: any) {
             if (props.onChange) (props.onChange as any)(val);
           }}
           disabled={Boolean(props.disabled)}
+          trackColor={{ false: "#c3c7ce", true: "#ec0016" }}
+          thumbColor="#ffffff"
           accessibilityLabel={props.label ?? String(props.children ?? "")}
         />
       </View>
@@ -1105,7 +1213,7 @@ function DBSwitchFn(props: DBSwitchProps, component: any) {
 const styles = StyleSheet.create({
   container: { marginVertical: 8 },
   row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  label: { flex: 1, fontSize: 14, color: "#333" }
+  label: { flex: 1, fontSize: 14, color: "#2e3036" }
 });
 
 const DBSwitch = forwardRef<View, DBSwitchProps>(DBSwitchFn);
@@ -1134,7 +1242,7 @@ function DBCheckboxFn(props: DBCheckboxProps, component: any) {
   return (
     <View style={styles.container} ref={component}>
       <Pressable
-        style={styles.row}
+        style={({ pressed }) => [styles.row, pressed && { opacity: 0.75 }]}
         onPress={handlePress}
         disabled={Boolean(props.disabled)}
         accessibilityRole="checkbox"
@@ -1164,12 +1272,12 @@ function DBCheckboxFn(props: DBCheckboxProps, component: any) {
 const styles = StyleSheet.create({
   container: { marginVertical: 4 },
   row: { flexDirection: "row", alignItems: "center", gap: 8 },
-  box: { width: 20, height: 20, borderWidth: 2, borderColor: "#333", borderRadius: 3, alignItems: "center", justifyContent: "center" },
-  boxChecked: { backgroundColor: "#333" },
-  boxDisabled: { borderColor: "#aaa", backgroundColor: "#f0f0f0" },
-  tick: { color: "#fff", fontSize: 13, fontWeight: "bold" },
-  label: { fontSize: 14, color: "#333", flex: 1 },
-  labelDisabled: { color: "#aaa" }
+  box: { width: 20, height: 20, borderWidth: 2, borderColor: "#646973", borderRadius: 3, alignItems: "center", justifyContent: "center" },
+  boxChecked: { backgroundColor: "#2e3036", borderColor: "#2e3036" },
+  boxDisabled: { borderColor: "#a6abb6", backgroundColor: "#f3f3f5" },
+  tick: { color: "#ffffff", fontSize: 13, fontWeight: "bold" },
+  label: { fontSize: 14, color: "#2e3036", flex: 1 },
+  labelDisabled: { color: "#a6abb6" }
 });
 
 const DBCheckbox = forwardRef<View, DBCheckboxProps>(DBCheckboxFn);
@@ -1195,7 +1303,7 @@ function DBRadioFn(props: DBRadioProps, component: any) {
   return (
     <View style={styles.container} ref={component}>
       <Pressable
-        style={styles.row}
+        style={({ pressed }) => [styles.row, pressed && { opacity: 0.75 }]}
         onPress={handlePress}
         disabled={Boolean(props.disabled)}
         accessibilityRole="radio"
@@ -1220,11 +1328,11 @@ function DBRadioFn(props: DBRadioProps, component: any) {
 const styles = StyleSheet.create({
   container: { marginVertical: 4 },
   row: { flexDirection: "row", alignItems: "center", gap: 8 },
-  outer: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: "#333", alignItems: "center", justifyContent: "center" },
-  outerDisabled: { borderColor: "#aaa" },
-  inner: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#333" },
-  label: { fontSize: 14, color: "#333", flex: 1 },
-  labelDisabled: { color: "#aaa" }
+  outer: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: "#646973", alignItems: "center", justifyContent: "center" },
+  outerDisabled: { borderColor: "#a6abb6" },
+  inner: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#ec0016" },
+  label: { fontSize: 14, color: "#2e3036", flex: 1 },
+  labelDisabled: { color: "#a6abb6" }
 });
 
 const DBRadio = forwardRef<View, DBRadioProps>(DBRadioFn);
@@ -1233,7 +1341,7 @@ export default DBRadio;
 
 	/* ---- DBSelect → Modal picker ---- */
 	'select/select.tsx': `import React, { forwardRef, useState, useId } from "react";
-import { View, Text, Pressable, Modal, FlatList, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, Pressable, Modal, FlatList, StyleSheet } from "react-native";
 import * as Haptics from "expo-haptics";
 import DBInfotext from "../infotext/infotext";
 import { DEFAULT_VALID_MESSAGE, DEFAULT_INVALID_MESSAGE } from "../../shared/constants";
@@ -1265,7 +1373,7 @@ function DBSelectFn(props: DBSelectProps, component: any) {
     <View style={styles.container} ref={component}>
       {props.label && <Text style={styles.label}>{props.label}</Text>}
       <Pressable
-        style={[styles.trigger, Boolean(props.disabled) && styles.triggerDisabled]}
+        style={({ pressed }) => [styles.trigger, Boolean(props.disabled) && styles.triggerDisabled, pressed && { opacity: 0.8 }]}
         onPress={() => !Boolean(props.disabled) && setOpen(true)}
         accessibilityRole="combobox"
         accessibilityState={{ expanded: open, disabled: Boolean(props.disabled) }}
@@ -1274,7 +1382,7 @@ function DBSelectFn(props: DBSelectProps, component: any) {
         <Text style={styles.arrow}>▾</Text>
       </Pressable>
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => setOpen(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
           <View style={styles.sheet}>
             <FlatList
               data={options}
@@ -1283,17 +1391,17 @@ function DBSelectFn(props: DBSelectProps, component: any) {
                 const val = typeof item === "string" ? item : (item as any).value ?? "";
                 const lbl = typeof item === "string" ? item : (item as any).label ?? val;
                 return (
-                  <TouchableOpacity
-                    style={[styles.option, val === selected && styles.optionSelected]}
+                  <Pressable
+                    style={({ pressed }) => [styles.option, val === selected && styles.optionSelected, pressed && { backgroundColor: "#edeef0" }]}
                     onPress={() => handleSelect(item)}
                   >
                     <Text style={[styles.optionText, val === selected && styles.optionTextSelected]}>{lbl}</Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               }}
             />
           </View>
-        </TouchableOpacity>
+        </Pressable>
       </Modal>
       {stringPropVisible(props.message, props.showMessage) && (
         <DBInfotext size="small" semantic="adaptive">{props.message}</DBInfotext>
@@ -1304,17 +1412,17 @@ function DBSelectFn(props: DBSelectProps, component: any) {
 
 const styles = StyleSheet.create({
   container: { marginVertical: 4 },
-  label: { fontSize: 12, color: "#555", marginBottom: 4 },
-  trigger: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#333", borderRadius: 4, padding: 10, backgroundColor: "#fff" },
-  triggerDisabled: { borderColor: "#aaa", backgroundColor: "#f5f5f5" },
-  triggerText: { flex: 1, fontSize: 14, color: "#333" },
-  arrow: { fontSize: 14, color: "#555" },
+  label: { fontSize: 12, color: "#5a5e68", marginBottom: 4 },
+  trigger: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#646973", borderRadius: 4, padding: 10, backgroundColor: "#ffffff" },
+  triggerDisabled: { borderColor: "#a6abb6", backgroundColor: "#f3f3f5" },
+  triggerText: { flex: 1, fontSize: 14, color: "#2e3036" },
+  arrow: { fontSize: 14, color: "#5a5e68" },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "flex-end" },
-  sheet: { backgroundColor: "#fff", borderTopLeftRadius: 12, borderTopRightRadius: 12, maxHeight: "50%", padding: 8 },
-  option: { padding: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#f0f0f0" },
-  optionSelected: { backgroundColor: "#f0f0ff" },
-  optionText: { fontSize: 15, color: "#333" },
-  optionTextSelected: { fontWeight: "bold" }
+  sheet: { backgroundColor: "#ffffff", borderTopLeftRadius: 12, borderTopRightRadius: 12, maxHeight: "50%", padding: 8 },
+  option: { padding: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#e1e2e6" },
+  optionSelected: { backgroundColor: "#edeef0" },
+  optionText: { fontSize: 15, color: "#2e3036" },
+  optionTextSelected: { fontWeight: "bold", color: "#ec0016" }
 });
 
 const DBSelect = forwardRef<View, DBSelectProps>(DBSelectFn);
@@ -1349,6 +1457,7 @@ function DBInputFn(props: DBInputProps, component: any) {
         value={value}
         onChangeText={(t) => { setValue(t); if (props.onChange) (props.onChange as any)(t); }}
         placeholder={String(props.placeholder ?? "")}
+        placeholderTextColor="#a6abb6"
         editable={!Boolean(props.disabled)}
         secureTextEntry={props.type === "password"}
         keyboardType={props.type === "email" ? "email-address" : props.type === "number" || props.type === "tel" ? "numeric" : "default"}
@@ -1369,14 +1478,14 @@ function DBInputFn(props: DBInputProps, component: any) {
 
 const styles = StyleSheet.create({
   container: { marginVertical: 4 },
-  label: { fontSize: 12, color: "#555", marginBottom: 4 },
-  required: { color: "#c00" },
-  input: { borderWidth: 1, borderColor: "#333", borderRadius: 4, padding: 10, fontSize: 14, backgroundColor: "#fff", color: "#333" },
-  focused: { borderColor: "#0070cc", borderWidth: 2 },
-  invalid: { borderColor: "#c00" },
-  valid: { borderColor: "#090" },
-  disabled: { borderColor: "#aaa", backgroundColor: "#f5f5f5", color: "#aaa" },
-  description: { fontSize: 12, color: "#777", marginTop: 4 }
+  label: { fontSize: 12, color: "#5a5e68", marginBottom: 4 },
+  required: { color: "#ec0016" },
+  input: { borderWidth: 1, borderColor: "#646973", borderRadius: 4, padding: 10, fontSize: 14, backgroundColor: "#ffffff", color: "#2e3036" },
+  focused: { borderColor: "#257fa8", borderWidth: 2 },
+  invalid: { borderColor: "#ec0016" },
+  valid: { borderColor: "#63a615" },
+  disabled: { borderColor: "#a6abb6", backgroundColor: "#f3f3f5", color: "#a6abb6" },
+  description: { fontSize: 12, color: "#727782", marginTop: 4 }
 });
 
 const DBInput = forwardRef<RNTextInput, DBInputProps>(DBInputFn);
@@ -1410,6 +1519,7 @@ function DBTextareaFn(props: DBTextareaProps, component: any) {
         value={value}
         onChangeText={(t) => { setValue(t); if (props.onChange) (props.onChange as any)(t); }}
         placeholder={String(props.placeholder ?? "")}
+        placeholderTextColor="#a6abb6"
         editable={!Boolean(props.disabled)}
         multiline
         numberOfLines={typeof props.rows === "number" ? props.rows : 4}
@@ -1428,12 +1538,12 @@ function DBTextareaFn(props: DBTextareaProps, component: any) {
 
 const styles = StyleSheet.create({
   container: { marginVertical: 4 },
-  label: { fontSize: 12, color: "#555", marginBottom: 4 },
-  required: { color: "#c00" },
-  input: { borderWidth: 1, borderColor: "#333", borderRadius: 4, padding: 10, fontSize: 14, backgroundColor: "#fff", color: "#333", minHeight: 80 },
-  invalid: { borderColor: "#c00" },
-  valid: { borderColor: "#090" },
-  disabled: { borderColor: "#aaa", backgroundColor: "#f5f5f5", color: "#aaa" }
+  label: { fontSize: 12, color: "#5a5e68", marginBottom: 4 },
+  required: { color: "#ec0016" },
+  input: { borderWidth: 1, borderColor: "#646973", borderRadius: 4, padding: 10, fontSize: 14, backgroundColor: "#ffffff", color: "#2e3036", minHeight: 80 },
+  invalid: { borderColor: "#ec0016" },
+  valid: { borderColor: "#63a615" },
+  disabled: { borderColor: "#a6abb6", backgroundColor: "#f3f3f5", color: "#a6abb6" }
 });
 
 const DBTextarea = forwardRef<RNTextInput, DBTextareaProps>(DBTextareaFn);
@@ -1442,7 +1552,7 @@ export default DBTextarea;
 
 	/* ---- DBCustomSelect → Modal multi-select picker ---- */
 	'custom-select/custom-select.tsx': `import React, { forwardRef, useState } from "react";
-import { View, Text, Pressable, Modal, FlatList, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, Pressable, Modal, FlatList, StyleSheet } from "react-native";
 import * as Haptics from "expo-haptics";
 import { DBCustomSelectProps } from "./model";
 
@@ -1472,7 +1582,7 @@ function DBCustomSelectFn(props: DBCustomSelectProps, component: any) {
     <View style={styles.container} ref={component}>
       {props.label && <Text style={styles.label}>{props.label}</Text>}
       <Pressable
-        style={[styles.trigger, Boolean(props.disabled) && styles.triggerDisabled]}
+        style={({ pressed }) => [styles.trigger, Boolean(props.disabled) && styles.triggerDisabled, pressed && { opacity: 0.8 }]}
         onPress={() => !Boolean(props.disabled) && setOpen(true)}
         accessibilityRole="combobox"
         accessibilityState={{ expanded: open }}
@@ -1481,7 +1591,7 @@ function DBCustomSelectFn(props: DBCustomSelectProps, component: any) {
         <Text style={styles.arrow}>{open ? "▴" : "▾"}</Text>
       </Pressable>
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => setOpen(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
           <View style={styles.sheet}>
             <FlatList
               data={options}
@@ -1494,19 +1604,22 @@ function DBCustomSelectFn(props: DBCustomSelectProps, component: any) {
                 const lbl = typeof item === "object" && item !== null ? String((item as any).label ?? val) : val;
                 const isSel = selected.includes(val);
                 return (
-                  <TouchableOpacity style={[styles.option, isSel && styles.optionSelected]} onPress={() => handleSelect(val)}>
+                  <Pressable
+                    style={({ pressed }) => [styles.option, isSel && styles.optionSelected, pressed && { backgroundColor: "#edeef0" }]}
+                    onPress={() => handleSelect(val)}
+                  >
                     {props.multiple && (
                       <View style={[styles.check, isSel && styles.checkSelected]}>
                         {isSel && <Text style={styles.checkMark}>✓</Text>}
                       </View>
                     )}
                     <Text style={[styles.optionText, isSel && styles.optionTextSelected]}>{lbl}</Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               }}
             />
           </View>
-        </TouchableOpacity>
+        </Pressable>
       </Modal>
       {props.children}
     </View>
@@ -1515,20 +1628,20 @@ function DBCustomSelectFn(props: DBCustomSelectProps, component: any) {
 
 const styles = StyleSheet.create({
   container: { marginVertical: 4 },
-  label: { fontSize: 12, color: "#555", marginBottom: 4 },
-  trigger: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#333", borderRadius: 4, padding: 10, backgroundColor: "#fff" },
-  triggerDisabled: { borderColor: "#aaa", backgroundColor: "#f5f5f5" },
-  triggerText: { flex: 1, fontSize: 14, color: "#333" },
-  arrow: { fontSize: 14, color: "#555" },
+  label: { fontSize: 12, color: "#5a5e68", marginBottom: 4 },
+  trigger: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#646973", borderRadius: 4, padding: 10, backgroundColor: "#ffffff" },
+  triggerDisabled: { borderColor: "#a6abb6", backgroundColor: "#f3f3f5" },
+  triggerText: { flex: 1, fontSize: 14, color: "#2e3036" },
+  arrow: { fontSize: 14, color: "#5a5e68" },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "flex-end" },
-  sheet: { backgroundColor: "#fff", borderTopLeftRadius: 12, borderTopRightRadius: 12, maxHeight: "60%", padding: 8 },
-  option: { flexDirection: "row", alignItems: "center", padding: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#f0f0f0" },
-  optionSelected: { backgroundColor: "#f0f0ff" },
-  optionText: { fontSize: 15, color: "#333", flex: 1 },
+  sheet: { backgroundColor: "#ffffff", borderTopLeftRadius: 12, borderTopRightRadius: 12, maxHeight: "60%", padding: 8 },
+  option: { flexDirection: "row", alignItems: "center", padding: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#e1e2e6" },
+  optionSelected: { backgroundColor: "#edeef0" },
+  optionText: { fontSize: 15, color: "#2e3036", flex: 1 },
   optionTextSelected: { fontWeight: "bold" },
-  check: { width: 20, height: 20, borderWidth: 2, borderColor: "#333", borderRadius: 3, alignItems: "center", justifyContent: "center", marginRight: 10 },
-  checkSelected: { backgroundColor: "#333" },
-  checkMark: { color: "#fff", fontSize: 12, fontWeight: "bold" }
+  check: { width: 20, height: 20, borderWidth: 2, borderColor: "#646973", borderRadius: 3, alignItems: "center", justifyContent: "center", marginRight: 10 },
+  checkSelected: { backgroundColor: "#ec0016", borderColor: "#ec0016" },
+  checkMark: { color: "#ffffff", fontSize: 12, fontWeight: "bold" }
 });
 
 const DBCustomSelect = forwardRef<View, DBCustomSelectProps>(DBCustomSelectFn);
@@ -1555,13 +1668,13 @@ function DBBadge(props: DBBadgeProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#c0392b",
+    backgroundColor: "#ec0016",
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 2,
     alignSelf: "flex-start",
   },
-  text: { color: "#fff", fontSize: 11, fontWeight: "bold" },
+  text: { color: "#ffffff", fontSize: 11, fontWeight: "bold" },
 });
 
 export default DBBadge;
@@ -1592,15 +1705,18 @@ export default DBBrand;
 `,
 
   'card/card.tsx': `import React from "react";
-import { View, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Pressable, StyleSheet } from "react-native";
 import type { DBCardProps } from "./model";
 
 function DBCard(props: DBCardProps) {
   if (props.onClick) {
     return (
-      <TouchableOpacity style={styles.card} onPress={props.onClick as any} activeOpacity={0.8}>
+      <Pressable
+        style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
+        onPress={props.onClick as any}
+      >
         {props.children}
-      </TouchableOpacity>
+      </Pressable>
     );
   }
   return <View style={styles.card}>{props.children}</View>;
@@ -1608,13 +1724,13 @@ function DBCard(props: DBCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "#ffffff",
     borderRadius: 8,
     padding: 16,
     marginVertical: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.12,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -1640,7 +1756,7 @@ function DBDivider(props: DBDividerProps) {
 }
 
 const styles = StyleSheet.create({
-  divider: { backgroundColor: "#e0e0e0" },
+  divider: { backgroundColor: "#e1e2e6" },
   horizontal: { height: 1, alignSelf: "stretch", marginVertical: 8 },
   vertical: { width: 1, alignSelf: "stretch", marginHorizontal: 8 },
 });
@@ -1652,35 +1768,54 @@ export default DBDivider;
 import { View, Text, StyleSheet } from "react-native";
 import type { DBInfotextProps } from "./model";
 
+const semanticColor: Record<string, string> = {
+  informational: "#257fa8",
+  successful: "#63a615",
+  warning: "#f39200",
+  critical: "#ec0016",
+  adaptive: "#5a5e68",
+};
+
 function DBInfotext(props: DBInfotextProps) {
+  const color = semanticColor[props.semantic ?? "adaptive"] ?? "#5a5e68";
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>{props.text ?? props.children}</Text>
+      <Text style={[styles.text, { color }]}>{props.text ?? props.children}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { paddingVertical: 4 },
-  text: { fontSize: 13, color: "#555" },
+  text: { fontSize: 13 },
 });
 
 export default DBInfotext;
 `,
 
   'notification/notification.tsx': `import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { stringPropVisible } from "../../utils";
 import type { DBNotificationProps } from "./model";
 import { DEFAULT_CLOSE_BUTTON } from "../../shared/constants";
+
+const semanticBorder: Record<string, string> = {
+  informational: "#257fa8",
+  successful: "#63a615",
+  warning: "#f39200",
+  critical: "#ec0016",
+  adaptive: "#646973",
+};
 
 function DBNotification(props: DBNotificationProps) {
   const [visible, setVisible] = useState(true);
 
   if (!visible) return null;
 
+  const borderColor = semanticBorder[props.semantic ?? "adaptive"] ?? "#646973";
+
   return (
-    <View style={styles.container} accessibilityRole="alert">
+    <View style={[styles.container, { borderLeftColor: borderColor }]} accessibilityRole="alert">
       {props.image ? <View style={styles.imageSlot}>{props.image as any}</View> : null}
       {stringPropVisible(props.headline, props.showHeadline) ? (
         <Text style={styles.headline}>{props.headline}</Text>
@@ -1691,16 +1826,17 @@ function DBNotification(props: DBNotificationProps) {
       ) : null}
       {props.link ? <View>{props.link as any}</View> : null}
       {Boolean(props.closeable) ? (
-        <TouchableOpacity
-          style={styles.closeBtn}
+        <Pressable
+          style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.7 }]}
           onPress={() => {
             setVisible(false);
             if (props.onClose) (props.onClose as any)();
           }}
           accessibilityLabel={props.closeButtonText ?? DEFAULT_CLOSE_BUTTON}
+          accessibilityRole="button"
         >
           <Text style={styles.closeBtnText}>✕</Text>
-        </TouchableOpacity>
+        </Pressable>
       ) : null}
     </View>
   );
@@ -1708,10 +1844,10 @@ function DBNotification(props: DBNotificationProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#fff",
+    backgroundColor: "#ffffff",
     borderRadius: 8,
     borderLeftWidth: 4,
-    borderLeftColor: "#0060a9",
+    borderLeftColor: "#646973",
     padding: 12,
     marginVertical: 6,
     shadowColor: "#000",
@@ -1721,11 +1857,11 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   imageSlot: { marginBottom: 8 },
-  headline: { fontSize: 16, fontWeight: "bold", marginBottom: 4, color: "#1a1a1a" },
-  body: { fontSize: 14, color: "#333" },
-  timestamp: { fontSize: 11, color: "#888", marginTop: 4 },
+  headline: { fontSize: 16, fontWeight: "bold", marginBottom: 4, color: "#2e3036" },
+  body: { fontSize: 14, color: "#2e3036" },
+  timestamp: { fontSize: 11, color: "#727782", marginTop: 4 },
   closeBtn: { position: "absolute", top: 8, right: 8, padding: 4 },
-  closeBtnText: { fontSize: 16, color: "#555" },
+  closeBtnText: { fontSize: 16, color: "#5a5e68" },
 });
 
 export default DBNotification;
@@ -1769,7 +1905,7 @@ export default DBStack;
 `,
 
   'tag/tag.tsx': `import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { DEFAULT_REMOVE } from "../../shared/constants";
 import type { DBTagProps } from "./model";
 
@@ -1779,13 +1915,14 @@ function DBTag(props: DBTagProps) {
     <View style={styles.tag}>
       <Text style={styles.text}>{props.content ?? props.text ?? props.children}</Text>
       {props.behavior === "removable" ? (
-        <TouchableOpacity
-          style={styles.removeBtn}
+        <Pressable
+          style={({ pressed }) => [styles.removeBtn, pressed && { opacity: 0.7 }]}
           onPress={props.onRemove as any}
           accessibilityLabel={removeLabel}
+          accessibilityRole="button"
         >
           <Text style={styles.removeBtnText}>✕</Text>
-        </TouchableOpacity>
+        </Pressable>
       ) : null}
     </View>
   );
@@ -1795,7 +1932,7 @@ const styles = StyleSheet.create({
   tag: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#e8f0fe",
+    backgroundColor: "#edeef0",
     borderRadius: 16,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -1803,9 +1940,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     alignSelf: "flex-start",
   },
-  text: { fontSize: 13, color: "#1a1a1a" },
+  text: { fontSize: 13, color: "#2e3036" },
   removeBtn: { marginLeft: 6, padding: 2 },
-  removeBtnText: { fontSize: 12, color: "#555" },
+  removeBtnText: { fontSize: 12, color: "#5a5e68" },
 });
 
 export default DBTag;
@@ -1834,14 +1971,14 @@ export default DBTabList;
 `,
 
   'tab-item/tab-item.tsx': `import React from "react";
-import { TouchableOpacity, Text, StyleSheet } from "react-native";
+import { Pressable, Text, StyleSheet } from "react-native";
 import type { DBTabItemProps } from "./model";
 
 function DBTabItem(props: DBTabItemProps) {
   const selected = Boolean(props.selected ?? props.active);
   return (
-    <TouchableOpacity
-      style={[styles.item, selected && styles.selected]}
+    <Pressable
+      style={({ pressed }) => [styles.item, selected && styles.selected, pressed && { opacity: 0.75 }]}
       onPress={props.onSelect as any}
       accessibilityRole="tab"
       accessibilityState={{ selected }}
@@ -1849,7 +1986,7 @@ function DBTabItem(props: DBTabItemProps) {
       <Text style={[styles.label, selected && styles.labelSelected]}>
         {props.label ?? props.children}
       </Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -1861,9 +1998,9 @@ const styles = StyleSheet.create({
     borderBottomColor: "transparent",
     marginRight: 4,
   },
-  selected: { borderBottomColor: "#0060a9" },
-  label: { fontSize: 14, color: "#555" },
-  labelSelected: { color: "#0060a9", fontWeight: "bold" },
+  selected: { borderBottomColor: "#ec0016" },
+  label: { fontSize: 14, color: "#5a5e68" },
+  labelSelected: { color: "#2e3036", fontWeight: "bold" },
 });
 
 export default DBTabItem;
@@ -1953,7 +2090,7 @@ export default DBCustomSelectList;
 `,
 
   'custom-select-list-item/custom-select-list-item.tsx': `import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { getBoolean } from "../../utils";
 import type { DBCustomSelectListItemProps } from "./model";
 
@@ -1961,8 +2098,13 @@ function DBCustomSelectListItem(props: DBCustomSelectListItemProps) {
   const selected = getBoolean(props.selected);
   const disabled = getBoolean(props.disabled);
   return (
-    <TouchableOpacity
-      style={[styles.item, selected && styles.selected, disabled && styles.disabled]}
+    <Pressable
+      style={({ pressed }) => [
+        styles.item,
+        selected && styles.selected,
+        disabled && styles.disabled,
+        pressed && !disabled && { backgroundColor: "#edeef0" }
+      ]}
       onPress={!disabled ? (props.onChange as any) : undefined}
       disabled={disabled}
       accessibilityRole="option"
@@ -1976,19 +2118,19 @@ function DBCustomSelectListItem(props: DBCustomSelectListItemProps) {
       <Text style={[styles.label, disabled && styles.disabledText]}>
         {props.label ?? props.children}
       </Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  item: { flexDirection: "row", alignItems: "center", padding: 12, borderBottomWidth: 1, borderBottomColor: "#f0f0f0" },
-  selected: { backgroundColor: "#e8f0fe" },
+  item: { flexDirection: "row", alignItems: "center", padding: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#e1e2e6" },
+  selected: { backgroundColor: "#edeef0" },
   disabled: { opacity: 0.4 },
-  check: { width: 18, height: 18, borderWidth: 2, borderColor: "#555", borderRadius: 3, alignItems: "center", justifyContent: "center", marginRight: 10 },
-  checkSelected: { backgroundColor: "#0060a9", borderColor: "#0060a9" },
-  checkMark: { color: "#fff", fontSize: 11, fontWeight: "bold" },
-  label: { fontSize: 14, color: "#222", flex: 1 },
-  disabledText: { color: "#999" },
+  check: { width: 18, height: 18, borderWidth: 2, borderColor: "#646973", borderRadius: 3, alignItems: "center", justifyContent: "center", marginRight: 10 },
+  checkSelected: { backgroundColor: "#ec0016", borderColor: "#ec0016" },
+  checkMark: { color: "#ffffff", fontSize: 11, fontWeight: "bold" },
+  label: { fontSize: 14, color: "#2e3036", flex: 1 },
+  disabledText: { color: "#a6abb6" },
 });
 
 export default DBCustomSelectListItem;
@@ -2088,6 +2230,12 @@ export default function reactNative(_tmp?: boolean) {
 		console.log(`[RN] dest: ${RN_DEST}`);
 
 		copyAndTransformDir(TMP_SRC, RN_DEST);
+
+		// Write design tokens file
+		const sharedDir = join(RN_DEST, 'shared');
+		ensureDir(sharedDir);
+		writeFileSync(join(sharedDir, 'tokens.ts'), DB_TOKENS_FILE, 'utf-8');
+		console.log('  [tokens] shared/tokens.ts');
 
 		// Overwrite shared utilities
 		const utilsDir = join(RN_DEST, 'utils');
