@@ -29,6 +29,7 @@ designers, and content authors build, maintain, and scale best-of-class digital 
 | [@db-ux/core-components](https://github.com/db-ux-design-system/core-web/tree/main/packages/components)       | CSS/SCSS styles for components               | [![@db-ux/core-components on Npmjs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2Fdb-ux-design-system%2Fcore-web%2Freleases%2Flatest&query=%24.tag_name&label=npm&color=ed1c24 "npm version")](https://npmjs.com/package/@db-ux/core-components "DB UX Design System – on NPM")             |
 | [@db-ux/ngx-core-components](https://github.com/db-ux-design-system/core-web/tree/main/output/angular)        | Native Angular components                    | [![@db-ux/ngx-core-components on Npmjs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2Fdb-ux-design-system%2Fcore-web%2Freleases%2Flatest&query=%24.tag_name&label=npm&color=ed1c24 "npm version")](https://npmjs.com/package/@db-ux/ngx-core-components "DB UX Design System – on NPM")     |
 | [@db-ux/react-core-components](https://github.com/db-ux-design-system/core-web/tree/main/output/react)        | Native React components                      | [![@db-ux/react-core-components on Npmjs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2Fdb-ux-design-system%2Fcore-web%2Freleases%2Flatest&query=%24.tag_name&label=npm&color=ed1c24 "npm version")](https://npmjs.com/package/@db-ux/react-core-components "DB UX Design System – on NPM") |
+| [@db-ux/react-native-core-components](https://github.com/Azer0s/db-ux-core-web/tree/main/output/react-native) | React Native / Expo components               | [![React Native CI](https://github.com/Azer0s/db-ux-core-web/actions/workflows/react-native.yml/badge.svg)](https://github.com/Azer0s/db-ux-core-web/actions/workflows/react-native.yml) |
 | [@db-ux/v-core-components](https://github.com/db-ux-design-system/core-web/tree/main/output/vue)              | Native Vue 3 components                      | [![@db-ux/v-core-components on Npmjs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2Fdb-ux-design-system%2Fcore-web%2Freleases%2Flatest&query=%24.tag_name&label=npm&color=ed1c24 "npm version")](https://npmjs.com/package/@db-ux/v-core-components "DB UX Design System – on NPM")         |
 | [@db-ux/wc-core-components](https://github.com/db-ux-design-system/core-web/tree/main/output/stencil)         | Web Components                               | [![@db-ux/wc-core-components on Npmjs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2Fdb-ux-design-system%2Fcore-web%2Freleases%2Flatest&query=%24.tag_name&label=npm&color=ed1c24 "npm version")](https://npmjs.com/package/@db-ux/wc-core-components "DB UX Design System – on NPM")       |
 | [@db-ux/mcp-server](https://github.com/db-ux-design-system/core-web/tree/main/packages/mcp-server)            | Model Context Protocol (MCP) Server          | [![@db-ux/mcp-server on Npmjs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2Fdb-ux-design-system%2Fcore-web%2Freleases%2Flatest&query=%24.tag_name&label=npm&color=ed1c24 "npm version")](https://npmjs.com/package/@db-ux/mcp-server "DB UX Design System – on NPM")                       |
@@ -39,6 +40,8 @@ designers, and content authors build, maintain, and scale best-of-class digital 
 
 **For JavaScript framework-specific components**: Choose your framework package (React, Angular, Vue, Web Components) which includes styling and JavaScript behavior.
 
+**For React Native / Expo**: Use `@db-ux/react-native-core-components` — all 37 components ported to idiomatic React Native with Expo APIs (expo-router, expo-haptics, expo-blur, etc.).
+
 **For other users**: Use `@db-ux/core-components` - it includes everything you need (foundations + component styles).
 
 **For design tokens only**: Use `@db-ux/core-foundations` if you only need colors, spacing, fonts, and icons without pre-built component styles.
@@ -47,6 +50,7 @@ designers, and content authors build, maintain, and scale best-of-class digital 
 
 1. **Install your preferred package** via npm or yarn:
     - For React: `npm i @db-ux/react-core-components`
+    - For React Native / Expo: `npm i @db-ux/react-native-core-components`
     - For Angular: `npm i @db-ux/ngx-core-components`
     - For Vue: `npm i @db-ux/v-core-components`
     - For Web Components: `npm i @db-ux/wc-core-components`
