@@ -38,22 +38,21 @@ const DB_THEME_ABSOLUTE_CSS = join(
 
 function buildFoundationsCSS(): void {
 	console.log('  [css-build] compiling foundations SCSS...');
-	const opts = { cwd: FOUNDATIONS_PKG, stdio: 'inherit' as const };
-	// Copy SCSS sources from src/ to build/styles/
-	execSync('npx cpr scss build/styles --overwrite', opts);
-	// Compile SCSS → CSS
-	execSync(
-		'npx sass --no-source-map --load-path=node_modules/ --load-path=../../node_modules/ build/styles',
-		opts
-	);
+	const root = join(FOUNDATIONS_PKG, '../..');
+	const opts = { cwd: root, stdio: 'inherit' as const };
+	// Run the proper build steps via npm workspace scripts (handles normalize copy etc.)
+	execSync('npm -w @db-ux/core-foundations run copy-prepare:normalize', opts);
+	execSync('npm -w @db-ux/core-foundations run build:02_copy', opts);
+	execSync('npm -w @db-ux/core-foundations run build:03_css', opts);
 	console.log('  [css-build] foundations OK');
 }
 
 function buildComponentsCSS(): void {
 	console.log('  [css-build] compiling component SCSS...');
+	const root = join(COMPONENTS_PKG, '../..');
 	execSync(
-		'npx sass src:build --no-source-map --load-path=node_modules/ --load-path=../../node_modules/',
-		{ cwd: COMPONENTS_PKG, stdio: 'inherit' as const }
+		'npm -w @db-ux/core-components run build-style:01_sass',
+		{ cwd: root, stdio: 'inherit' as const }
 	);
 	console.log('  [css-build] components OK');
 }
