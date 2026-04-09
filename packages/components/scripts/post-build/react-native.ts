@@ -6,12 +6,421 @@ import {
 	writeFileSync
 } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { execSync } from 'node:child_process';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
+const transform = _require('css-to-react-native').default as (
+	tuples: [string, string][]
+) => Record<string, string | number>;
 
 /** Absolute path to the monorepo root (packages/components/scripts/post-build → ../../../../) */
 const REPO_ROOT = resolve(process.cwd(), '../..');
 
 const TMP_SRC = join(REPO_ROOT, 'output/tmp/react-native/react/src');
 const RN_DEST = join(REPO_ROOT, 'output/react-native/src');
+
+// Paths used by the CSS → StyleSheet pipeline
+const FOUNDATIONS_PKG = join(REPO_ROOT, 'packages/foundations');
+const COMPONENTS_PKG = resolve(process.cwd()); // packages/components (cwd when tsx runs)
+const COMPONENTS_CSS_BUILD = join(COMPONENTS_PKG, 'build/components');
+const DB_THEME_DEFAULT_VARS = join(
+	REPO_ROOT,
+	'node_modules/@db-ux/db-theme/build/styles/_default_variables.scss'
+);
+const DB_THEME_ABSOLUTE_CSS = join(
+	REPO_ROOT,
+	'node_modules/@db-ux/db-theme/build/styles/absolute.css'
+);
+
+// ---------------------------------------------------------------------------
+// CSS build helpers — compile foundations SCSS then component SCSS
+// ---------------------------------------------------------------------------
+
+function buildFoundationsCSS(): void {
+	console.log('  [css-build] compiling foundations SCSS...');
+	const opts = { cwd: FOUNDATIONS_PKG, stdio: 'inherit' as const };
+	// Copy SCSS sources from src/ to build/styles/
+	execSync('npx cpr scss build/styles --overwrite', opts);
+	// Compile SCSS → CSS
+	execSync(
+		'npx sass --no-source-map --load-path=node_modules/ --load-path=../../node_modules/ build/styles',
+		opts
+	);
+	console.log('  [css-build] foundations OK');
+}
+
+function buildComponentsCSS(): void {
+	console.log('  [css-build] compiling component SCSS...');
+	execSync(
+		'npx sass src:build --no-source-map --load-path=node_modules/ --load-path=../../node_modules/',
+		{ cwd: COMPONENTS_PKG, stdio: 'inherit' as const }
+	);
+	console.log('  [css-build] components OK');
+}
+
+// ---------------------------------------------------------------------------
+// CSS variable map — parses all foundations + db-theme CSS to resolve tokens
+// ---------------------------------------------------------------------------
+
+type CSSVarMap = Record<string, string>;
+
+/** Parse CSS custom property declarations from any CSS/SCSS source text */
+function parseCSSVars(src: string, map: CSSVarMap): void {
+	for (const match of src.matchAll(/^\s*(--[\w-]+)\s*:\s*([^;]+);/gm)) {
+		const name = match[1].trim();
+		if (!(name in map)) map[name] = match[2].trim();
+	}
+}
+
+function buildCSSVarMap(): CSSVarMap {
+	const map: CSSVarMap = {};
+
+	// 1. Base palette from db-theme (hex colors, spacing values, etc.)
+	if (existsSync(DB_THEME_DEFAULT_VARS)) {
+		parseCSSVars(readFileSync(DB_THEME_DEFAULT_VARS, 'utf-8'), map);
+	}
+
+	// 2. @property initial-value blocks from absolute.css (covers numbers/lengths)
+	if (existsSync(DB_THEME_ABSOLUTE_CSS)) {
+		const src = readFileSync(DB_THEME_ABSOLUTE_CSS, 'utf-8');
+		for (const block of src.matchAll(/@property\s+(--[\w-]+)\s*\{([^}]+)\}/gs)) {
+			const varName = block[1];
+			const iv = block[2].match(/initial-value\s*:\s*([^;]+);/);
+			if (iv && !(varName in map)) map[varName] = iv[1].trim();
+		}
+	}
+
+	// 3. Foundations built CSS (adaptive/semantic color aliases)
+	//    These reference the base palette via light-dark() — we extract light values.
+	const foundationsDefaultsDir = join(FOUNDATIONS_PKG, 'build/styles/defaults');
+	const foundationsCSSFiles = [
+		join(FOUNDATIONS_PKG, 'build/styles/bundle.css'),
+		join(foundationsDefaultsDir, 'default-required.css'),
+		join(foundationsDefaultsDir, 'default-root.css'),
+		join(foundationsDefaultsDir, 'default-elevation.css'),
+	];
+	for (const f of foundationsCSSFiles) {
+		if (existsSync(f)) parseCSSVars(readFileSync(f, 'utf-8'), map);
+	}
+
+	return map;
+}
+
+/**
+ * Resolve all `var(--db-*)` references in a CSS value.
+ * Also resolves `light-dark(light, dark)` by picking the light (first) value.
+ */
+function resolveCSSValue(value: string, varMap: CSSVarMap, depth = 0): string {
+	if (depth > 10) return value;
+
+	// Normalize whitespace (multi-line values from SCSS output)
+	let result = value.replace(/[\n\r\t]+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+
+	// Strip !important
+	result = result.replace(/\s*!important\s*$/, '').trim();
+
+	// Skip color-mix() — these are dynamic browser-only values, no RN equivalent
+	if (result.includes('color-mix(')) return '';
+
+	// Resolve light-dark(light, dark) → take first (light) arg using paren-balanced scan
+	result = result.replace(/light-dark\(/g, '\x00LIGHTDARK\x00(');
+	result = result.replace(/\x00LIGHTDARK\x00\(([^]*)/s, (_m, rest) => {
+		// Walk 'rest' to find the top-level comma, respecting nested ()
+		let d = 1, i = 0;
+		let firstCommaAt = -1;
+		let closeAt = -1;
+		while (i < rest.length && d > 0) {
+			if (rest[i] === '(') d++;
+			else if (rest[i] === ')') { d--; if (d === 0) { closeAt = i; break; } }
+			else if (rest[i] === ',' && d === 1 && firstCommaAt < 0) firstCommaAt = i;
+			i++;
+		}
+		const lightVal = firstCommaAt >= 0
+			? rest.slice(0, firstCommaAt).trim()
+			: (closeAt >= 0 ? rest.slice(0, closeAt).trim() : rest.trim());
+		const after = closeAt >= 0 ? rest.slice(closeAt + 1) : '';
+		return lightVal + after;
+	});
+
+	// Resolve var(--name, fallback) — use paren-balanced extraction for fallback
+	result = result.replace(/var\(\s*(--[\w-]+)\s*(?:,([^)]*(?:\([^)]*\)[^)]*)*))?\)/g, (_m, name, fallback) => {
+		const resolved = varMap[name];
+		if (resolved) return resolveCSSValue(resolved, varMap, depth + 1);
+		if (fallback) return resolveCSSValue(fallback.trim(), varMap, depth + 1);
+		return _m;
+	});
+
+	return result;
+}
+
+// ---------------------------------------------------------------------------
+// CSS property → React Native style conversion (via css-to-react-native)
+// ---------------------------------------------------------------------------
+
+type RNStyleObject = Record<string, string | number>;
+
+// Properties that are web-only and should be silently dropped before passing
+// to css-to-react-native (the library throws on unknowns).
+const CSS_SKIP_PROPS = new Set([
+	'display', 'cursor', 'transition', 'animation', 'animation-name',
+	'animation-duration', 'animation-timing-function', 'animation-fill-mode',
+	'transform', 'transform-origin', 'filter', 'box-shadow', 'box-sizing',
+	'outline', 'resize', 'appearance', 'pointer-events', 'user-select',
+	'white-space', 'word-break', 'overflow-wrap', 'word-wrap',
+	'vertical-align', 'content', 'list-style', 'list-style-type',
+	'visibility', 'clip', 'clip-path', 'will-change', 'contain',
+	'isolation', 'mix-blend-mode', 'backdrop-filter', 'scroll-behavior',
+	'scrollbar-width', 'scrollbar-color', 'text-overflow', 'text-shadow',
+	'text-decoration-line', 'text-decoration-color', 'text-decoration-thickness',
+	'text-underline-offset', 'columns', 'column-count',
+	'float', 'clear', 'grid', 'grid-template', 'grid-area',
+	'grid-column', 'grid-row', 'grid-template-areas', 'grid-template-columns',
+	'grid-template-rows', 'place-items', 'place-content',
+	'inset', 'inset-block', 'inset-inline',
+	'inset-block-start', 'inset-block-end',
+	'inset-inline-start', 'inset-inline-end',
+	'border-block', 'border-inline', 'font',
+	// text-align is only valid on Text nodes in RN, skip to avoid View warnings
+	'text-align', 'text-align-last',
+	// text-decoration sub-properties not supported in RN (only textDecorationLine is)
+	'text-decoration-color', 'text-decoration-style', 'text-decoration-thickness',
+	'text-decoration-line', 'text-decoration-skip-ink',
+]);
+
+// CSS logical properties → their RN equivalents (pre-mapped before transform)
+const LOGICAL_PROP_MAP: Record<string, string> = {
+	'padding-inline': 'padding-horizontal',
+	'padding-block': 'padding-vertical',
+	'padding-inline-start': 'padding-start',
+	'padding-inline-end': 'padding-end',
+	'padding-block-start': 'padding-top',
+	'padding-block-end': 'padding-bottom',
+	'margin-inline': 'margin-horizontal',
+	'margin-block': 'margin-vertical',
+	'margin-inline-start': 'margin-start',
+	'margin-inline-end': 'margin-end',
+	'margin-block-start': 'margin-top',
+	'margin-block-end': 'margin-bottom',
+	'inline-size': 'width',
+	'block-size': 'height',
+	'min-inline-size': 'min-width',
+	'max-inline-size': 'max-width',
+	'min-block-size': 'min-height',
+	'max-block-size': 'max-height',
+};
+
+// RN position only supports 'absolute' | 'relative' — 'fixed'/'sticky' must be dropped
+const SKIP_PROP_VALUES: Record<string, Set<string>> = {
+	'position': new Set(['fixed', 'sticky']),
+};
+
+// Values that are CSS-only and should be skipped
+const SKIP_VALUES = new Set(['fit-content', 'max-content', 'min-content', 'auto', 'normal', 'inherit', 'unset', 'revert', 'initial']);
+
+/** Convert rem/em/px strings to numbers in a transform result. */
+function normalizeStyleValues(styles: Record<string, unknown>): RNStyleObject {
+	const result: RNStyleObject = {};
+	for (const [key, val] of Object.entries(styles)) {
+		if (typeof val === 'number') {
+			result[key] = val;
+		} else if (typeof val === 'string') {
+			const remMatch = val.match(/^(-?[\d.]+)rem$/);
+			if (remMatch) { result[key] = Math.round(parseFloat(remMatch[1]) * 16); continue; }
+			const pxMatch = val.match(/^(-?[\d.]+)px$/);
+			if (pxMatch) { result[key] = parseFloat(pxMatch[1]); continue; }
+			const emMatch = val.match(/^(-?[\d.]+)em$/);
+			if (emMatch) { result[key] = Math.round(parseFloat(emMatch[1]) * 14); continue; }
+			// Drop multi-value strings (e.g. "0.5rem 1rem") or unresolved units
+			if (/[\d]+(rem|em|px)\s+[\d]/.test(val)) continue;
+			if (/ /.test(val) && /\d+(rem|em|px)/.test(val)) continue;
+			// Drop multi-word keyword values (e.g. "hidden auto") — RN needs single keywords
+			if (/ /.test(val) && /^[a-z-]+ [a-z-]/.test(val)) continue;
+			result[key] = val;
+		}
+	}
+	return result;
+}
+
+/**
+ * Converts a single CSS declaration (property + resolved value) to a RN style
+ * object using css-to-react-native. Returns {} on failure or unsupported prop.
+ */
+function cssDeclarationToRN(prop: string, value: string): RNStyleObject {
+	prop = prop.trim().toLowerCase();
+	value = value.trim();
+
+	// Drop CSS custom properties, web-only, and any grid-* properties
+	if (prop.startsWith('--') || prop.startsWith('grid-') || CSS_SKIP_PROPS.has(prop)) return {};
+
+	// Drop unresolvable or web-only values
+	if (value.includes('var(') || value.includes('calc(')) return {};
+	if (!value || SKIP_VALUES.has(value)) return {};
+	// Drop prop+value combos that are invalid in RN (e.g. position: fixed)
+	if (SKIP_PROP_VALUES[prop]?.has(value)) return {};
+
+	// Map CSS logical properties to the RN-compatible names transform understands
+	const mappedProp = LOGICAL_PROP_MAP[prop] ?? prop;
+
+	try {
+		const raw = transform([[mappedProp, value]]);
+		return normalizeStyleValues(raw);
+	} catch {
+		return {};
+	}
+}
+
+// ---------------------------------------------------------------------------
+// CSS rule extractor — parses compiled CSS and produces per-class RN styles
+// ---------------------------------------------------------------------------
+
+interface ParsedRule {
+	/** e.g. "db-badge" */
+	className: string;
+	/** data attribute name if selector is .db-xxx[data-yyy=zzz] */
+	dataAttr?: string;
+	/** data attribute value */
+	dataValue?: string;
+	styles: RNStyleObject;
+}
+
+/**
+ * Walk a CSS string extracting top-level rule blocks using brace balancing.
+ * At-rules (@layer, @media, @keyframes, etc.) are skipped entirely.
+ */
+function extractTopLevelRules(css: string): Array<{ selector: string; declarations: string }> {
+	const stripped = css.replace(/\/\*[\s\S]*?\*\//g, '');
+	const result: Array<{ selector: string; declarations: string }> = [];
+	let i = 0;
+	const len = stripped.length;
+
+	while (i < len) {
+		while (i < len && /\s/.test(stripped[i])) i++;
+		if (i >= len) break;
+
+		const start = i;
+		while (i < len && stripped[i] !== '{' && stripped[i] !== ';') i++;
+		if (i >= len) break;
+
+		if (stripped[i] === ';') { i++; continue; }
+
+		const selector = stripped.slice(start, i).trim();
+		i++; // skip '{'
+
+		let depth = 1;
+		const bodyStart = i;
+		while (i < len && depth > 0) {
+			if (stripped[i] === '{') depth++;
+			else if (stripped[i] === '}') depth--;
+			i++;
+		}
+		const body = stripped.slice(bodyStart, i - 1);
+
+		if (selector.startsWith('@')) continue;
+
+		result.push({ selector, declarations: body });
+	}
+
+	return result;
+}
+
+/**
+ * Parses a CSS file and returns all rules matching simple \`.db-{name}\` selectors
+ * (optionally with a single \`[data-attr=value]\` modifier).
+ * Pseudo-classes, pseudo-elements, and multi-class selectors are skipped.
+ */
+function parseCSSRules(cssContent: string, varMap: CSSVarMap): ParsedRule[] {
+	const rules: ParsedRule[] = [];
+
+	for (const { selector, declarations } of extractTopLevelRules(cssContent)) {
+		for (const rawSel of selector.split(',')) {
+			const sel = rawSel.trim();
+
+			const simpleMatch = sel.match(
+				/^\.(db-[\w-]+)(?:\[data-([\w-]+)=["'"]?([\w-]+)["'"]?\])?$/
+			);
+			if (!simpleMatch) continue;
+			if (/[: >+~]/.test(sel)) continue;
+
+			const className = simpleMatch[1];
+			const dataAttr = simpleMatch[2];
+			const dataValue = simpleMatch[3];
+
+			const styles: RNStyleObject = {};
+			for (const decl of declarations.split(';')) {
+				const colon = decl.indexOf(':');
+				if (colon < 0) continue;
+				const prop = decl.slice(0, colon).trim();
+				const val = decl.slice(colon + 1).trim();
+				if (!prop || !val) continue;
+				const resolved = resolveCSSValue(val, varMap);
+				Object.assign(styles, cssDeclarationToRN(prop, resolved));
+			}
+
+			if (Object.keys(styles).length > 0) {
+				rules.push({ className, dataAttr, dataValue, styles });
+			}
+		}
+	}
+
+	return rules;
+}
+
+
+/**
+ * For a given component name, reads its compiled CSS and returns a map of
+ * StyleSheet keys → RN style objects.
+ *
+ * Keys:
+ *   - "db-xxx"               → base styles for .db-xxx
+ *   - "db-xxx__attr__value"  → additional styles for .db-xxx[data-attr=value]
+ */
+function buildComponentStyles(
+	componentName: string,
+	varMap: CSSVarMap
+): Record<string, RNStyleObject> {
+	const cssFile = join(COMPONENTS_CSS_BUILD, componentName, `${componentName}.css`);
+	if (!existsSync(cssFile)) return {};
+
+	const css = readFileSync(cssFile, 'utf-8');
+	const rules = parseCSSRules(css, varMap);
+	const result: Record<string, RNStyleObject> = {};
+
+	for (const rule of rules) {
+		const key = rule.dataAttr
+			? `${rule.className}__${rule.dataAttr}__${rule.dataValue}`
+			: rule.className;
+
+		if (!result[key]) {
+			result[key] = { ...rule.styles };
+		} else {
+			Object.assign(result[key], rule.styles);
+		}
+	}
+
+	return result;
+}
+
+/**
+ * Renders a StyleSheet.create({...}) source string from a style map.
+ * Used for injection into generated component files.
+ */
+function renderStyleSheet(styleMap: Record<string, RNStyleObject>): string {
+	const entries = Object.entries(styleMap);
+	if (entries.length === 0) return 'const styles = StyleSheet.create({});\n';
+
+	const lines: string[] = ['const styles = StyleSheet.create({'];
+	for (const [key, styles] of entries) {
+		const safeKey = /^[a-zA-Z_$][\w$]*$/.test(key) ? key : `"${key}"`;
+		lines.push(`  ${safeKey}: {`);
+		for (const [prop, val] of Object.entries(styles)) {
+			const serialized = typeof val === 'string' ? `"${val}"` : String(val);
+			lines.push(`    ${prop}: ${serialized},`);
+		}
+		lines.push('  },');
+	}
+	lines.push('});\n');
+	return lines.join('\n');
+}
 
 // ---------------------------------------------------------------------------
 // Global text transformations applied to every generated TSX file
@@ -2232,6 +2641,17 @@ export default function reactNative(_tmp?: boolean) {
 		console.log(`[RN] src:  ${TMP_SRC}`);
 		console.log(`[RN] dest: ${RN_DEST}`);
 
+		// -----------------------------------------------------------------------
+		// Step 0: Build foundations + component CSS for StyleSheet conversion
+		// -----------------------------------------------------------------------
+		buildFoundationsCSS();
+		buildComponentsCSS();
+
+		// Build CSS variable map once (used for all components)
+		console.log('  [css→rn] building CSS variable map...');
+		const cssVarMap = buildCSSVarMap();
+		console.log(`  [css→rn] ${Object.keys(cssVarMap).length} CSS variables loaded`);
+
 		copyAndTransformDir(TMP_SRC, RN_DEST);
 
 		// Write design tokens file
@@ -2323,6 +2743,79 @@ export const getRootProps = (_props: any, _filter?: string[]): Record<string, un
 			writeFileSync(destFile, content, 'utf-8');
 			console.log(`  [override] ${relPath}`);
 		}
+
+		// -----------------------------------------------------------------------
+		// CSS → StyleSheet injection for all component overrides
+		// -----------------------------------------------------------------------
+		// For each component, parse its compiled CSS and inject a `cssStyles`
+		// StyleSheet const. In AUTO_COMPONENT_OVERRIDES (the simpler ones, not in
+		// the manual COMPONENT_OVERRIDES), also update the container style to
+		// merge CSS-derived styles with the existing hardcoded ones.
+		// -----------------------------------------------------------------------
+		console.log('  [css→rn] injecting CSS-derived styles into components...');
+		let injected = 0;
+		for (const [relPath] of Object.entries(ALL_COMPONENT_OVERRIDES)) {
+			if (!relPath.endsWith('.tsx')) continue;
+			const componentName = relPath.split('/')[0];
+			const destFile = join(componentsDir, relPath);
+			const styleMap = buildComponentStyles(componentName, cssVarMap);
+			if (Object.keys(styleMap).length === 0) continue;
+
+			let src = readFileSync(destFile, 'utf-8');
+
+			// Append cssStyles to the file (before the final export default line)
+			const cssStylesCode = renderStyleSheet(styleMap).replace(
+				'const styles = StyleSheet.create(',
+				'const cssStyles = StyleSheet.create('
+			);
+
+			// Ensure StyleSheet is imported
+			if (!src.includes('StyleSheet')) {
+				const rnImportMatch = src.match(/import \{([^}]+)\} from "react-native";/);
+				if (rnImportMatch) {
+					// Add StyleSheet to existing react-native import
+					src = src.replace(
+						rnImportMatch[0],
+						`import { ${rnImportMatch[1].trim()}, StyleSheet } from "react-native";`
+					);
+				} else {
+					// No react-native import — insert after the last import statement
+					const lastImportEnd = [...src.matchAll(/^import .+;$/gm)].at(-1);
+					if (lastImportEnd?.index !== undefined) {
+						const at = lastImportEnd.index + lastImportEnd[0].length;
+						src = src.slice(0, at) + '\nimport { StyleSheet } from "react-native";' + src.slice(at);
+					} else {
+						src = 'import { StyleSheet } from "react-native";\n' + src;
+					}
+				}
+			}
+
+			// For AUTO components (not manually crafted), merge cssStyles into container
+			const isAutoOnly = relPath in AUTO_COMPONENT_OVERRIDES &&
+				!(relPath in COMPONENT_OVERRIDES);
+			if (isAutoOnly) {
+				const baseClass = `db-${componentName}`;
+				if (styleMap[baseClass]) {
+					// style={styles.container} → style={[cssStyles['db-xxx'], styles.container]}
+					src = src.replace(
+						/style=\{styles\.container\}/g,
+						`style={[cssStyles['${baseClass}'], styles.container]}`
+					);
+				}
+			}
+
+			// Inject the cssStyles const before the final export line
+			const exportMatch = src.match(/\nexport default /);
+			if (exportMatch && exportMatch.index !== undefined) {
+				src = src.slice(0, exportMatch.index) + '\n' + cssStylesCode + src.slice(exportMatch.index);
+			} else {
+				src += '\n' + cssStylesCode;
+			}
+
+			writeFileSync(destFile, src, 'utf-8');
+			injected++;
+		}
+		console.log(`  [css→rn] injected CSS styles into ${injected} components`);
 
 		// -----------------------------------------------------------------------
 		// Post-process example files and purge spec/test files
