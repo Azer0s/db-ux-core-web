@@ -61,6 +61,9 @@ const REMOVE_PATTERNS: RegExp[] = [
 ];
 
 const REPLACEMENTS: Array<[RegExp | string, string]> = [
+	// Patch DOM-only observer types in model files (not in lib: ["es2022"])
+	[/_resizeObserver\?: ResizeObserver;/g, '_resizeObserver?: unknown;'],
+	[/_observer\?: IntersectionObserver;/g, '_observer?: unknown;'],
 	// Fix React import — hooks are imported from react, RN components imported separately
 	[
 		`import * as React from "react";`,
@@ -408,10 +411,10 @@ function DBNavigation(props: DBNavigationExtraProps) {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarPosition: "top",
-        tabBarIconStyle: { display: "none" },
+        tabBarPosition: "top" as any,
+        tabBarIconStyle: { display: "none" } as any,
         ...(props.screenOptions ?? {})
-      }}
+      } as any}
     >
       {props.children}
     </Tabs>
@@ -604,14 +607,14 @@ import { DBCustomButtonProps } from "./model";
 function DBCustomButtonFn(props: DBCustomButtonProps, component: any) {
   async function handlePress(event: any) {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (props.onClick) (props.onClick as any)(event);
+    if ((props as any).onClick) (props as any).onClick(event);
   }
 
   return (
     <Pressable
       ref={component}
       onPress={handlePress}
-      disabled={Boolean(props.disabled)}
+      disabled={Boolean((props as any).disabled)}
       style={({ pressed }) => [styles.button, pressed && styles.pressed]}
       accessibilityRole="button"
     >
@@ -724,7 +727,7 @@ function DBDrawerFn(props: DBDrawerProps, component: any) {
   }, [isOpen]);
 
   const direction = props.direction ?? "left";
-  const isVertical = direction === "top" || direction === "bottom";
+  const isVertical = direction === "up" || direction === "down";
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: isVertical
@@ -845,7 +848,7 @@ function DBTooltipFn(props: DBTooltipProps, component: any) {
             ]}
           >
             <Text style={styles.tooltipText}>
-              {props.tooltipText ?? props.children}
+              {(props as any).tooltipText ?? props.children}
             </Text>
           </View>
         </Pressable>
@@ -896,7 +899,7 @@ function DBPopoverFn(props: DBPopoverProps, component: any) {
 
   function handleClose() {
     setVisible(false);
-    props.onClose?.();
+    (props as any).onClose?.();
   }
 
   return (
@@ -980,7 +983,7 @@ function DBAccordionFn(props: DBAccordionProps, component: any) {
         ? items.map((item, i) => (
             <DBAccordionItem
               key={\`\${name}-\${i}\`}
-              open={props.behavior === "single" ? openIndex === i : item.open}
+              open={props.behavior === "single" ? openIndex === i : (item as any).open}
               onToggle={() => handleToggle(i)}
               {...item}
             />
@@ -1010,17 +1013,17 @@ import { DBAccordionItemProps } from "./model";
 function DBAccordionItemFn(props: DBAccordionItemProps & {
   onToggle?: () => void;
 }, component: any) {
-  const [open, setOpen] = useState(Boolean(props.open));
+  const [open, setOpen] = useState(Boolean((props as any).open ?? props.defaultOpen));
   const height = useSharedValue(open ? 1 : 0);
 
   useEffect(() => {
-    const next = Boolean(props.open);
+    const next = Boolean((props as any).open);
     setOpen(next);
     height.value = withTiming(next ? 1 : 0, {
       duration: 220,
       easing: Easing.out(Easing.quad)
     });
-  }, [props.open]);
+  }, [(props as any).open]);
 
   function handlePress() {
     const next = !open;
@@ -1030,8 +1033,8 @@ function DBAccordionItemFn(props: DBAccordionItemProps & {
       easing: Easing.out(Easing.quad)
     });
     if (props.onToggle) props.onToggle();
-    if (props.onOpen && next) (props.onOpen as any)();
-    if (props.onClose && !next) (props.onClose as any)();
+    if ((props as any).onOpen && next) (props as any).onOpen();
+    if ((props as any).onClose && !next) (props as any).onClose();
   }
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -1047,13 +1050,13 @@ function DBAccordionItemFn(props: DBAccordionItemProps & {
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
       >
-        <Text style={styles.title}>{props.title ?? props.label}</Text>
+        <Text style={styles.title}>{props.headlinePlain ?? props.text}</Text>
         <Text style={styles.chevron}>{open ? "▴" : "▾"}</Text>
       </Pressable>
       <Animated.View style={[styles.body, animatedStyle]}>
         <View style={styles.bodyInner}>
-          {props.content
-            ? <Text>{props.content}</Text>
+          {(props as any).content
+            ? <Text>{(props as any).content}</Text>
             : props.children}
         </View>
       </Animated.View>
@@ -1079,7 +1082,7 @@ const styles = StyleSheet.create({
   bodyInner: { paddingHorizontal: 16, paddingBottom: 14 }
 });
 
-const DBAccordionItem = forwardRef<View, DBAccordionItemProps & { onToggle?: () => void }>(DBAccordionItemFn);
+const DBAccordionItem = forwardRef<View, DBAccordionItemProps & { open?: boolean; onOpen?: () => void; onClose?: () => void; onToggle?: () => void }>(DBAccordionItemFn);
 export default DBAccordionItem;
 `,
 
@@ -1318,8 +1321,8 @@ function DBRadioFn(props: DBRadioProps, component: any) {
           </Text>
         )}
       </Pressable>
-      {stringPropVisible(props.message, props.showMessage) && (
-        <DBInfotext size="small" semantic="adaptive">{props.message}</DBInfotext>
+      {stringPropVisible((props as any).message, (props as any).showMessage) && (
+        <DBInfotext size="small" semantic="adaptive">{(props as any).message}</DBInfotext>
       )}
     </View>
   );
@@ -1466,7 +1469,7 @@ function DBInputFn(props: DBInputProps, component: any) {
         onFocus={() => { setFocused(true); if (props.onFocus) (props.onFocus as any)(); }}
         onBlur={() => { setFocused(false); if (props.onBlur) (props.onBlur as any)(); }}
       />
-      {props.description && <Text style={styles.description}>{props.description}</Text>}
+      {(props as any).description && <Text style={styles.description}>{(props as any).description}</Text>}
       {stringPropVisible(props.message, props.showMessage) && (
         <DBInfotext size="small" semantic="adaptive">{props.message}</DBInfotext>
       )}
@@ -1574,7 +1577,7 @@ function DBCustomSelectFn(props: DBCustomSelectProps, component: any) {
       setOpen(false);
     }
     setSelected(next);
-    if (props.onValueChange) props.onValueChange(next.join(","));
+    if ((props as any).onValueChange) (props as any).onValueChange(next.join(","));
     if (props.onOptionSelected) (props.onOptionSelected as any)(val);
   }
 
@@ -1744,7 +1747,7 @@ import { View, StyleSheet } from "react-native";
 import type { DBDividerProps } from "./model";
 
 function DBDivider(props: DBDividerProps) {
-  const isVertical = props.orientation === "vertical";
+  const isVertical = props.variant === "vertical";
   return (
     <View
       style={[
@@ -1887,7 +1890,7 @@ import { View, StyleSheet } from "react-native";
 import type { DBStackProps } from "./model";
 
 function DBStack(props: DBStackProps) {
-  const isHorizontal = props.orientation === "horizontal";
+  const isHorizontal = props.direction === "row";
   return (
     <View style={[styles.stack, isHorizontal ? styles.row : styles.column]}>
       {props.children}
@@ -1975,11 +1978,11 @@ import { Pressable, Text, StyleSheet } from "react-native";
 import type { DBTabItemProps } from "./model";
 
 function DBTabItem(props: DBTabItemProps) {
-  const selected = Boolean(props.selected ?? props.active);
+  const selected = Boolean(props.active);
   return (
     <Pressable
       style={({ pressed }) => [styles.item, selected && styles.selected, pressed && { opacity: 0.75 }]}
-      onPress={props.onSelect as any}
+      onPress={(props as any).onSelect}
       accessibilityRole="tab"
       accessibilityState={{ selected }}
     >
@@ -2095,7 +2098,7 @@ import { getBoolean } from "../../utils";
 import type { DBCustomSelectListItemProps } from "./model";
 
 function DBCustomSelectListItem(props: DBCustomSelectListItemProps) {
-  const selected = getBoolean(props.selected);
+  const selected = getBoolean(props.checked);
   const disabled = getBoolean(props.disabled);
   return (
     <Pressable
@@ -2107,7 +2110,7 @@ function DBCustomSelectListItem(props: DBCustomSelectListItemProps) {
       ]}
       onPress={!disabled ? (props.onChange as any) : undefined}
       disabled={disabled}
-      accessibilityRole="option"
+      accessibilityRole="menuitem"
       accessibilityState={{ selected, disabled }}
     >
       {props.type === "checkbox" ? (
@@ -2248,6 +2251,12 @@ export default function reactNative(_tmp?: boolean) {
 		if (existsSync(modelPath)) {
 			let m = readFileSync(modelPath, 'utf-8');
 			m = m.replace(`import * as React from "react";\n`, '');
+			// Replace @db-ux/core-foundations import with an inline stub
+			// (foundations may not be built in the consumer's environment)
+			m = m.replace(
+				/import \{ IconTypes \} from '@db-ux\/core-foundations';\n?/g,
+				'/** Stub: icon name — use any string matching the DB icon set */\nexport type IconTypes = string;\n'
+			);
 			m = m
 				.replace(/export type ClickEvent<T> = [^;]+;/, '')
 				.replace(/export type ChangeEvent<T> = [^;]+;/, '')
@@ -2255,6 +2264,9 @@ export default function reactNative(_tmp?: boolean) {
 				.replace(/export type InteractionEvent<T> = [^;]+;/, '')
 				.replace(/export type GeneralEvent<T> = [^;]+;/, '')
 				.replace(/export type GeneralKeyboardEvent<T> = [^;]+;/, '');
+			// Patch DOM-only types that aren't in lib: ["es2022"]
+			m = m.replace(/_observer\?: IntersectionObserver;/g, '_observer?: unknown;');
+			m = m.replace(/: ResizeObserver\b/g, ': unknown');
 			m += RN_SHARED_MODEL_PATCH;
 			writeFileSync(modelPath, m, 'utf-8');
 		}
@@ -2284,6 +2296,11 @@ export const getFloatingPosition = (..._args: unknown[]): void => {};
 			'navigation.ts': `/** Stub: no DOM-based navigation triangles in React Native */
 export type TriangleData = Record<string, never>;
 export const handleNavigationTriangle = (..._args: unknown[]): void => {};
+/** RN stub — the original class is DOM-only */
+export class NavigationItemSafeTriangle {
+  constructor(..._args: unknown[]) {}
+  destroy(): void {}
+}
 `,
 			'react.ts': `/** Stub: no HTML-attribute filtering in React Native */
 export const filterPassingProps = (_props: any, _filter: string[]): Record<string, unknown> => ({});

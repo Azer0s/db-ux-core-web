@@ -25,6 +25,9 @@ jobs:
       - name: 🔨 Build React Native output
         run: npm -w @db-ux/core-components run compile:react-native
 
+      - name: 🔍 Type-check React Native output
+        run: npm -w @db-ux/react-native-core-components exec -- tsc --noEmit
+
       - name: ⏫ Upload React Native src
         uses: actions/upload-artifact@v7
         with:
