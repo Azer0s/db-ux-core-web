@@ -1,8 +1,10 @@
 import {
+	copyFileSync,
 	existsSync,
 	mkdirSync,
 	readdirSync,
 	readFileSync,
+	unlinkSync,
 	writeFileSync
 } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -667,11 +669,55 @@ export type GeneralKeyboardEvent<_T> = GestureResponderEvent;
 // DB design tokens for React Native
 // ---------------------------------------------------------------------------
 
-const DB_TOKENS_FILE = `/**
- * DB UX Design System – React Native design tokens
- * Sourced from @db-ux/db-theme absolute CSS variables.
- * Import in your app: import { DBColors, DBTypography, DBSpacing } from "@db-ux/react-native-core-components/src/shared/tokens";
+/**
+ * Resolve badge-relevant CSS custom properties for a given semantic.
+ * Both weak and strong emphasis use emphasis-70 for border (per badge.css).
  */
+function resolveBadgePalette(
+	semantic: string,
+	cssVarMap: CSSVarMap
+): { weakBg: string; weakText: string; border: string; strongBg: string; strongText: string } {
+	const r = (varName: string) => resolveCSSValue(`var(${varName})`, cssVarMap).trim();
+	const sem = semantic === 'adaptive' ? 'adaptive' : semantic;
+	return {
+		weakBg:   r(`--db-${sem}-bg-basic-level-3-default`),
+		weakText: r(`--db-${sem}-on-bg-basic-emphasis-80-default`),
+		border:   r(`--db-${sem}-on-bg-basic-emphasis-70-default`),
+		strongBg: r(`--db-${sem}-bg-vibrant-default`),
+		strongText: r(`--db-${sem}-on-bg-vibrant-default`),
+	};
+}
+
+function buildTokensFile(cssVarMap: CSSVarMap): string {
+	const semantics = ['neutral', 'adaptive', 'brand', 'critical', 'informational', 'successful', 'warning'] as const;
+
+	const paletteLines = semantics.map((sem) => {
+		// brand has no CSS vars under that name — reuse critical (same red hue)
+		const cssKey = sem === 'brand' ? 'critical' : sem;
+		const p = resolveBadgePalette(cssKey, cssVarMap);
+		const pad = ' '.repeat(Math.max(0, 13 - sem.length));
+		return `  ${sem}:${pad}{ weakBg: '${p.weakBg}', weakText: '${p.weakText}', border: '${p.border}', strongBg: '${p.strongBg}', strongText: '${p.strongText}' },`;
+	});
+
+	return `/**
+ * DB UX Design System – React Native design tokens
+ * Color values resolved from @db-ux/core-foundations CSS custom properties at build time.
+ * Import in your app: import { DBColors, DBTypography, DBSpacing } from "@db-ux/react-native-core-components";
+ */
+
+/**
+ * Per-semantic badge/tag color palette resolved from CSS custom properties (light mode).
+ *
+ * CSS variable mapping:
+ *   weakBg   ← --db-{sem}-bg-basic-level-3-default
+ *   weakText ← --db-{sem}-on-bg-basic-emphasis-80-default
+ *   border   ← --db-{sem}-on-bg-basic-emphasis-70-default  (same for weak and strong per CSS)
+ *   strongBg ← --db-{sem}-bg-vibrant-default
+ *   strongText ← --db-{sem}-on-bg-vibrant-default
+ */
+export const DBColorPalette = {
+${paletteLines.join('\n')}
+} as const;
 
 /** Neutral (grey) scale — 0 = darkest, 14 = white */
 export const DBColors = {
@@ -731,6 +777,17 @@ export const DBColors = {
   },
 } as const;
 
+/**
+ * Font family names loaded by DBFontProvider.
+ * Use these in StyleSheet to apply the DB typeface (Open Sans).
+ */
+export const DBFontFamily = {
+  regular:  'OpenSans-Regular',
+  medium:   'OpenSans-Medium',
+  semibold: 'OpenSans-SemiBold',
+  bold:     'OpenSans-Bold',
+} as const;
+
 export const DBTypography = {
   size3XS: 11,
   size2XS: 12,
@@ -763,6 +820,7 @@ export const DBBorderRadius = {
   full: 9999,
 } as const;
 `;
+}
 
 // ---------------------------------------------------------------------------
 // Per-component manual implementations using Expo APIs
@@ -770,17 +828,15 @@ export const DBBorderRadius = {
 
 const COMPONENT_OVERRIDES: Record<string, string> = {
 
-	/* ---- DBPage → SafeAreaView (expo-safe-area-context) + StatusBar ---- */
+	/* ---- DBPage → SafeAreaView (built-in react-native) + StatusBar ---- */
 	'page/page.tsx': `import React, { forwardRef } from "react";
-import { View, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { StatusBar } from "expo-status-bar";
+import { View, SafeAreaView, StatusBar, StyleSheet } from "react-native";
 import { DBPageProps } from "./model";
 
 function DBPageFn(props: DBPageProps, component: any) {
   return (
     <SafeAreaView style={styles.page} ref={component}>
-      <StatusBar style="auto" />
+      <StatusBar barStyle="dark-content" />
       {props.header && <View style={styles.headerSlot}>{props.header}</View>}
       <View style={styles.main}>{props.children}</View>
       {props.footer && <View style={styles.footerSlot}>{props.footer}</View>}
@@ -799,52 +855,57 @@ const DBPage = forwardRef<View, DBPageProps>(DBPageFn);
 export default DBPage;
 `,
 
-	/* ---- DBNavigation → expo-router Tabs ---- */
+	/* ---- DBNavigation → simple View container ---- */
 	'navigation/navigation.tsx': `import React from "react";
-import { Tabs } from "expo-router";
+import { View, StyleSheet } from "react-native";
 
 export type DBNavigationExtraProps = {
-  screenOptions?: React.ComponentProps<typeof Tabs>["screenOptions"];
   children?: React.ReactNode;
+  style?: any;
 };
 
-/**
- * DBNavigation renders as expo-router \`<Tabs>\` for top-level tab navigation.
- * Pass \`screenOptions\` to customise tab bar appearance (active colour, tabBarButton, etc.).
- * Children must be \`<DBNavigationItem>\` elements (which are direct aliases of Tabs.Screen
- * so expo-router can detect them correctly).
- */
 function DBNavigation(props: DBNavigationExtraProps) {
-  return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarPosition: "top" as any,
-        tabBarIconStyle: { display: "none" } as any,
-        ...(props.screenOptions ?? {})
-      } as any}
-    >
-      {props.children}
-    </Tabs>
-  );
+  return <View style={[styles.container, props.style]}>{props.children}</View>;
 }
+
+const styles = StyleSheet.create({
+  container: { flexDirection: "row", flexWrap: "wrap" }
+});
 
 export default DBNavigation;
 `,
 
-	/* ---- DBNavigationItem → direct alias of Tabs.Screen ---- */
-	'navigation-item/navigation-item.tsx': `/**
- * DBNavigationItem is a direct re-export of expo-router Tabs.Screen.
- *
- * expo-router performs a strict reference check (child.type === Tabs.Screen)
- * so this MUST be the exact same object — no wrapper component is possible.
- *
- * Usage:
- *   <DBNavigationItem name="my_screen" options={{ title: "My Screen" }} />
- */
-import { Tabs } from "expo-router";
+	/* ---- DBNavigationItem → simple View item ---- */
+	'navigation-item/navigation-item.tsx': `import React from "react";
+import { Pressable, Text, StyleSheet } from "react-native";
+import { DBColors } from "../../shared/tokens";
 
-const DBNavigationItem = Tabs.Screen;
+export type DBNavigationItemProps = {
+  label?: string;
+  active?: boolean;
+  onPress?: () => void;
+  children?: React.ReactNode;
+};
+
+function DBNavigationItem(props: DBNavigationItemProps) {
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.item, props.active && styles.itemActive, pressed && { opacity: 0.7 }]}
+      onPress={props.onPress}
+      accessibilityRole="menuitem"
+    >
+      {props.label ? <Text style={[styles.label, props.active && styles.labelActive]}>{props.label}</Text> : props.children}
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  item: { paddingHorizontal: 12, paddingVertical: 8 },
+  itemActive: { borderBottomWidth: 2, borderBottomColor: DBColors.brand.origin },
+  label: { fontSize: 14, color: DBColors.neutral[3] },
+  labelActive: { color: DBColors.brand.origin, fontWeight: "700" }
+});
+
 export default DBNavigationItem;
 `,
 
@@ -897,6 +958,7 @@ export default DBIcon;
 	'link/link.tsx': `import React, { forwardRef } from "react";
 import { Text, Pressable, View, StyleSheet } from "react-native";
 import * as Linking from "expo-linking";
+import { DBColors } from "../../shared/tokens";
 import { DBLinkProps } from "./model";
 
 function DBLinkFn(props: DBLinkProps, component: any) {
@@ -925,23 +987,22 @@ function DBLinkFn(props: DBLinkProps, component: any) {
 }
 
 const styles = StyleSheet.create({
-  link: { color: "#257fa8", textDecorationLine: "underline" },
-  disabled: { color: "#a6abb6", textDecorationLine: "none" }
+  link: { color: DBColors.informational.origin, textDecorationLine: "underline" },
+  disabled: { color: DBColors.neutral[9], textDecorationLine: "none" }
 });
 
 const DBLink = forwardRef<View, DBLinkProps>(DBLinkFn);
 export default DBLink;
 `,
 
-	/* ---- DBButton → Pressable + expo-haptics ---- */
+	/* ---- DBButton → Pressable ---- */
 	'button/button.tsx': `import React, { forwardRef } from "react";
 import { Pressable, Text, View, StyleSheet } from "react-native";
-import * as Haptics from "expo-haptics";
+import { DBColors, DBTypography, DBFontFamily, DBSpacing, DBBorderRadius } from "../../shared/tokens";
 import { DBButtonProps } from "./model";
 
 function DBButtonFn(props: DBButtonProps, component: any) {
-  async function handlePress(event: any) {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  function handlePress(event: any) {
     if (props.onClick) (props.onClick as any)(event);
   }
 
@@ -985,36 +1046,34 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 4,
+    paddingVertical: DBSpacing.sm + 2,
+    paddingHorizontal: DBSpacing.lg,
+    borderRadius: DBBorderRadius.sm,
     borderWidth: 1,
-    borderColor: "#646973",
-    backgroundColor: "transparent"
+    borderColor: DBColors.neutral[1],
+    backgroundColor: "transparent",
   },
-  filled: { backgroundColor: "#2e3036", borderColor: "#2e3036" },
+  filled: { backgroundColor: DBColors.neutral[3], borderColor: DBColors.neutral[3] },
   ghost: { borderColor: "transparent" },
-  brand: { backgroundColor: "#ec0016", borderColor: "#ec0016" },
+  brand: { backgroundColor: DBColors.brand.origin, borderColor: DBColors.brand.origin },
   buttonDisabled: { opacity: 0.4 },
   fullWidth: { width: "100%" },
-  label: { fontSize: 14, color: "#2e3036", fontWeight: "500" },
-  labelInverted: { color: "#ffffff" },
-  labelDisabled: { color: "#a6abb6" }
+  label: { fontSize: DBTypography.sizeSM, color: DBColors.neutral[3], fontWeight: DBTypography.weightMedium, fontFamily: DBFontFamily.medium },
+  labelInverted: { color: DBColors.neutral[14] },
+  labelDisabled: { color: DBColors.neutral[9] },
 });
 
 const DBButton = forwardRef<View, DBButtonProps>(DBButtonFn);
 export default DBButton;
 `,
 
-	/* ---- DBCustomButton → Pressable + expo-haptics ---- */
+	/* ---- DBCustomButton → Pressable ---- */
 	'custom-button/custom-button.tsx': `import React, { forwardRef } from "react";
 import { Pressable, View, StyleSheet } from "react-native";
-import * as Haptics from "expo-haptics";
 import { DBCustomButtonProps } from "./model";
 
 function DBCustomButtonFn(props: DBCustomButtonProps, component: any) {
-  async function handlePress(event: any) {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  function handlePress(event: any) {
     if ((props as any).onClick) (props as any).onClick(event);
   }
 
@@ -1044,10 +1103,10 @@ const DBCustomButton = forwardRef<View, DBCustomButtonProps>(DBCustomButtonFn);
 export default DBCustomButton;
 `,
 
-	/* ---- DBHeader → SafeAreaView + expo-router Drawer trigger ---- */
+	/* ---- DBHeader → SafeAreaView (built-in) ---- */
 	'header/header.tsx': `import React, { forwardRef } from "react";
-import { View, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { View, SafeAreaView, StyleSheet } from "react-native";
+import { DBColors } from "../../shared/tokens";
 import DBButton from "../button/button";
 import DBDrawer from "../drawer/drawer";
 import { getBoolean } from "../../utils";
@@ -1060,7 +1119,7 @@ function DBHeaderFn(props: DBHeaderProps, component: any) {
   }
 
   return (
-    <SafeAreaView edges={["top"]} style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.header} ref={component}>
         {props.brand && <View style={styles.brand}>{props.brand}</View>}
         <View style={styles.navContainer}>{props.children}</View>
@@ -1085,14 +1144,14 @@ function DBHeaderFn(props: DBHeaderProps, component: any) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { backgroundColor: "#ffffff" },
+  safeArea: { backgroundColor: DBColors.neutral[14] },
   header: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#e1e2e6"
+    borderBottomColor: DBColors.neutral[11]
   },
   brand: { marginRight: 16 },
   navContainer: { flex: 1 },
@@ -1103,45 +1162,40 @@ const DBHeader = forwardRef<View, DBHeaderProps>(DBHeaderFn);
 export default DBHeader;
 `,
 
-	/* ---- DBDrawer → Modal + react-native-reanimated slide ---- */
-	'drawer/drawer.tsx': `import React, { forwardRef, useEffect } from "react";
+	/* ---- DBDrawer → Modal + built-in Animated slide ---- */
+	'drawer/drawer.tsx': `import React, { forwardRef, useEffect, useRef } from "react";
 import {
   Modal,
   View,
   Pressable,
   Text,
   ScrollView,
+  Animated,
   StyleSheet
 } from "react-native";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing
-} from "react-native-reanimated";
+import { DBColors } from "../../shared/tokens";
 import { DBDrawerProps } from "./model";
 
 const DURATION = 260;
+const DRAWER_WIDTH = 320;
 
 function DBDrawerFn(props: DBDrawerProps, component: any) {
   const isOpen = Boolean(props.open);
-  const translateX = useSharedValue(isOpen ? 0 : -320);
+  const translateX = useRef(new Animated.Value(isOpen ? 0 : -DRAWER_WIDTH)).current;
 
   useEffect(() => {
-    translateX.value = withTiming(isOpen ? 0 : -320, {
+    Animated.timing(translateX, {
+      toValue: isOpen ? 0 : -DRAWER_WIDTH,
       duration: DURATION,
-      easing: Easing.out(Easing.cubic)
-    });
+      useNativeDriver: true
+    }).start();
   }, [isOpen]);
 
   const direction = props.direction ?? "left";
   const isVertical = direction === "up" || direction === "down";
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: isVertical
-      ? [{ translateY: translateX.value }]
-      : [{ translateX: translateX.value }]
-  }));
+  const transform = isVertical
+    ? [{ translateY: translateX }]
+    : [{ translateX: translateX }];
 
   return (
     <Modal
@@ -1155,7 +1209,7 @@ function DBDrawerFn(props: DBDrawerProps, component: any) {
           style={styles.backdrop}
           onPress={() => props.backdrop !== "none" && props.onClose?.()}
         />
-        <Animated.View style={[styles.drawer, animatedStyle]}>
+        <Animated.View style={[styles.drawer, { transform }]}>
           <View style={styles.drawerHeader}>
             <Pressable
               onPress={() => props.onClose?.()}
@@ -1181,10 +1235,10 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.4)"
   },
   drawer: {
-    width: 320,
-    backgroundColor: "#ffffff",
+    width: DRAWER_WIDTH,
+    backgroundColor: DBColors.neutral[14],
     flexDirection: "column",
-    shadowColor: "#000",
+    shadowColor: DBColors.neutral[0],
     shadowOffset: { width: 2, height: 0 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -1195,9 +1249,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "flex-end",
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#e1e2e6"
+    borderBottomColor: DBColors.neutral[11]
   },
-  closeBtn: { fontSize: 20, color: "#2e3036" },
+  closeBtn: { fontSize: 20, color: DBColors.neutral[3] },
   content: { flex: 1, padding: 16 }
 });
 
@@ -1214,6 +1268,7 @@ import {
   Pressable,
   StyleSheet
 } from "react-native";
+import { DBColors } from "../../shared/tokens";
 import { DBTooltipProps } from "./model";
 
 function DBTooltipFn(props: DBTooltipProps, component: any) {
@@ -1269,24 +1324,24 @@ const styles = StyleSheet.create({
   container: {},
   tooltip: {
     position: "absolute",
-    backgroundColor: "#2e3036",
+    backgroundColor: DBColors.neutral[3],
     borderRadius: 6,
     padding: 10,
     maxWidth: 220,
-    shadowColor: "#000",
+    shadowColor: DBColors.neutral[0],
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4
   },
-  tooltipText: { color: "#ffffff", fontSize: 13, lineHeight: 18 }
+  tooltipText: { color: DBColors.neutral[14], fontSize: 13, lineHeight: 18 }
 });
 
 const DBTooltip = forwardRef<View, DBTooltipProps>(DBTooltipFn);
 export default DBTooltip;
 `,
 
-	/* ---- DBPopover → expo-blur backdrop ---- */
+	/* ---- DBPopover → Modal with semi-transparent backdrop ---- */
 	'popover/popover.tsx': `import React, { forwardRef, useState, useEffect } from "react";
 import {
   Modal,
@@ -1295,7 +1350,7 @@ import {
   ScrollView,
   StyleSheet
 } from "react-native";
-import { BlurView } from "expo-blur";
+import { DBColors } from "../../shared/tokens";
 import { DBPopoverProps } from "./model";
 
 function DBPopoverFn(props: DBPopoverProps, component: any) {
@@ -1318,16 +1373,11 @@ function DBPopoverFn(props: DBPopoverProps, component: any) {
         animationType="fade"
         onRequestClose={handleClose}
       >
-        <BlurView intensity={20} style={StyleSheet.absoluteFill}>
-          <Pressable
-            style={styles.backdrop}
-            onPress={handleClose}
-          >
-            <View style={styles.popover}>
-              <ScrollView>{props.children}</ScrollView>
-            </View>
-          </Pressable>
-        </BlurView>
+        <Pressable style={styles.backdrop} onPress={handleClose}>
+          <View style={styles.popover}>
+            <ScrollView>{props.children}</ScrollView>
+          </View>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -1336,16 +1386,17 @@ function DBPopoverFn(props: DBPopoverProps, component: any) {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
     justifyContent: "center",
     alignItems: "center"
   },
   popover: {
-    backgroundColor: "#ffffff",
+    backgroundColor: DBColors.neutral[14],
     borderRadius: 12,
     padding: 16,
     maxWidth: 320,
     maxHeight: "70%",
-    shadowColor: "#000",
+    shadowColor: DBColors.neutral[0],
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -1407,53 +1458,47 @@ const DBAccordion = forwardRef<View, DBAccordionProps>(DBAccordionFn);
 export default DBAccordion;
 `,
 
-	/* ---- DBAccordionItem → react-native-reanimated ---- */
-	'accordion-item/accordion-item.tsx': `import React, { forwardRef, useState, useEffect } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing
-} from "react-native-reanimated";
+	/* ---- DBAccordionItem → built-in Animated expand/collapse ---- */
+	'accordion-item/accordion-item.tsx': `import React, { forwardRef, useState, useEffect, useRef } from "react";
+import { View, Text, Pressable, Animated, StyleSheet } from "react-native";
+import { DBColors } from "../../shared/tokens";
 import { DBAccordionItemProps } from "./model";
 
 function DBAccordionItemFn(props: DBAccordionItemProps & {
   onToggle?: () => void;
 }, component: any) {
   const [open, setOpen] = useState(Boolean((props as any).open ?? props.defaultOpen));
-  const height = useSharedValue(open ? 1 : 0);
+  const anim = useRef(new Animated.Value(open ? 1 : 0)).current;
 
   useEffect(() => {
     const next = Boolean((props as any).open);
     setOpen(next);
-    height.value = withTiming(next ? 1 : 0, {
+    Animated.timing(anim, {
+      toValue: next ? 1 : 0,
       duration: 220,
-      easing: Easing.out(Easing.quad)
-    });
+      useNativeDriver: false
+    }).start();
   }, [(props as any).open]);
 
   function handlePress() {
     const next = !open;
     setOpen(next);
-    height.value = withTiming(next ? 1 : 0, {
+    Animated.timing(anim, {
+      toValue: next ? 1 : 0,
       duration: 220,
-      easing: Easing.out(Easing.quad)
-    });
+      useNativeDriver: false
+    }).start();
     if (props.onToggle) props.onToggle();
     if ((props as any).onOpen && next) (props as any).onOpen();
     if ((props as any).onClose && !next) (props as any).onClose();
   }
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: height.value,
-    maxHeight: height.value * 2000
-  }));
+  const maxHeight = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 2000] });
 
   return (
     <View style={styles.container} ref={component}>
       <Pressable
-        style={({ pressed }) => [styles.header, pressed && { backgroundColor: "#f3f3f5" }]}
+        style={({ pressed }) => [styles.header, pressed && { backgroundColor: DBColors.neutral[13] }]}
         onPress={handlePress}
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
@@ -1461,7 +1506,7 @@ function DBAccordionItemFn(props: DBAccordionItemProps & {
         <Text style={styles.title}>{props.headlinePlain ?? props.text}</Text>
         <Text style={styles.chevron}>{open ? "▴" : "▾"}</Text>
       </Pressable>
-      <Animated.View style={[styles.body, animatedStyle]}>
+      <Animated.View style={[styles.body, { maxHeight, opacity: anim }]}>
         <View style={styles.bodyInner}>
           {(props as any).content
             ? <Text>{(props as any).content}</Text>
@@ -1475,7 +1520,7 @@ function DBAccordionItemFn(props: DBAccordionItemProps & {
 const styles = StyleSheet.create({
   container: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#e1e2e6"
+    borderBottomColor: DBColors.neutral[11]
   },
   header: {
     flexDirection: "row",
@@ -1484,8 +1529,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16
   },
-  title: { fontSize: 15, fontWeight: "500", flex: 1, color: "#2e3036" },
-  chevron: { fontSize: 12, color: "#5a5e68" },
+  title: { fontSize: 15, fontWeight: "500", flex: 1, color: DBColors.neutral[3] },
+  chevron: { fontSize: 12, color: DBColors.neutral[6] },
   body: { overflow: "hidden" },
   bodyInner: { paddingHorizontal: 16, paddingBottom: 14 }
 });
@@ -1494,10 +1539,10 @@ const DBAccordionItem = forwardRef<View, DBAccordionItemProps & { open?: boolean
 export default DBAccordionItem;
 `,
 
-	/* ---- DBTabs → expo-router Tabs (same as navigation) ---- */
+	/* ---- DBTabs → ScrollView tab bar ---- */
 	'tabs/tabs.tsx': `import React, { forwardRef, useState, useId } from "react";
 import { View, ScrollView, Pressable, Text, StyleSheet } from "react-native";
-import * as Haptics from "expo-haptics";
+import { DBColors } from "../../shared/tokens";
 import { DBSimpleTabProps, DBTabsProps } from "./model";
 
 function DBTabsFn(props: DBTabsProps, component: any) {
@@ -1513,8 +1558,7 @@ function DBTabsFn(props: DBTabsProps, component: any) {
 
   const isHorizontal = !props.orientation || props.orientation === "horizontal";
 
-  async function handleTabPress(index: number) {
-    await Haptics.selectionAsync();
+  function handleTabPress(index: number) {
     setSelectedIndex(index);
     if (props.onIndexChange) props.onIndexChange(index);
     if (props.onTabSelect) (props.onTabSelect as any)(index);
@@ -1559,17 +1603,17 @@ function DBTabsFn(props: DBTabsProps, component: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  tabBarH: { flexDirection: "row", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#e1e2e6" },
-  tabBarV: { flexDirection: "column", borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: "#e1e2e6" },
+  tabBarH: { flexDirection: "row", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: DBColors.neutral[11] },
+  tabBarV: { flexDirection: "column", borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: DBColors.neutral[11] },
   tab: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 2,
     borderBottomColor: "transparent"
   },
-  tabActive: { borderBottomColor: "#ec0016" },
-  tabText: { fontSize: 14, color: "#5a5e68" },
-  tabTextActive: { color: "#2e3036", fontWeight: "600" },
+  tabActive: { borderBottomColor: DBColors.brand.origin },
+  tabText: { fontSize: 14, color: DBColors.neutral[6] },
+  tabTextActive: { color: DBColors.neutral[3], fontWeight: "600" },
   panel: { flex: 1, padding: 12 }
 });
 
@@ -1578,11 +1622,12 @@ export default DBTabs;
 `,
 
 	/* ---- DBSwitch → RN Switch (built-in) ---- */
-	'switch/switch.tsx': `import React, { forwardRef, useState, useId } from "react";
+	'switch/switch.tsx': `import React, { forwardRef, useId } from "react";
 import { View, Text, Switch as RNSwitch, StyleSheet } from "react-native";
 import DBInfotext from "../infotext/infotext";
 import { DEFAULT_VALID_MESSAGE } from "../../shared/constants";
 import { stringPropVisible } from "../../utils";
+import { DBColors, DBTypography, DBFontFamily, DBSpacing } from "../../shared/tokens";
 import { DBSwitchProps } from "./model";
 
 function DBSwitchFn(props: DBSwitchProps, component: any) {
@@ -1601,11 +1646,11 @@ function DBSwitchFn(props: DBSwitchProps, component: any) {
         <RNSwitch
           value={Boolean(props.checked)}
           onValueChange={(val) => {
-            if (props.onChange) (props.onChange as any)(val);
+            if (props.onChange) (props.onChange as any)({ target: { checked: val, value: val ? "on" : "off" } });
           }}
           disabled={Boolean(props.disabled)}
-          trackColor={{ false: "#c3c7ce", true: "#ec0016" }}
-          thumbColor="#ffffff"
+          trackColor={{ false: DBColors.neutral[10], true: DBColors.brand.origin }}
+          thumbColor={DBColors.neutral[14]}
           accessibilityLabel={props.label ?? String(props.children ?? "")}
         />
       </View>
@@ -1622,9 +1667,9 @@ function DBSwitchFn(props: DBSwitchProps, component: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { marginVertical: 8 },
+  container: { marginVertical: DBSpacing.sm },
   row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  label: { flex: 1, fontSize: 14, color: "#2e3036" }
+  label: { flex: 1, fontSize: DBTypography.sizeSM, color: DBColors.neutral[3], fontFamily: DBFontFamily.regular },
 });
 
 const DBSwitch = forwardRef<View, DBSwitchProps>(DBSwitchFn);
@@ -1637,6 +1682,7 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 import DBInfotext from "../infotext/infotext";
 import { DEFAULT_VALID_MESSAGE } from "../../shared/constants";
 import { stringPropVisible } from "../../utils";
+import { DBColors, DBTypography, DBFontFamily, DBSpacing, DBBorderRadius } from "../../shared/tokens";
 import { DBCheckboxProps } from "./model";
 
 function DBCheckboxFn(props: DBCheckboxProps, component: any) {
@@ -1647,7 +1693,7 @@ function DBCheckboxFn(props: DBCheckboxProps, component: any) {
     if (Boolean(props.disabled)) return;
     const next = !checked;
     setInternal(next);
-    if (props.onChange) (props.onChange as any)(next);
+    if (props.onChange) (props.onChange as any)({ target: { checked: next, value: next ? "on" : "off" } });
   }
 
   return (
@@ -1681,14 +1727,14 @@ function DBCheckboxFn(props: DBCheckboxProps, component: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { marginVertical: 4 },
-  row: { flexDirection: "row", alignItems: "center", gap: 8 },
-  box: { width: 20, height: 20, borderWidth: 2, borderColor: "#646973", borderRadius: 3, alignItems: "center", justifyContent: "center" },
-  boxChecked: { backgroundColor: "#2e3036", borderColor: "#2e3036" },
-  boxDisabled: { borderColor: "#a6abb6", backgroundColor: "#f3f3f5" },
-  tick: { color: "#ffffff", fontSize: 13, fontWeight: "bold" },
-  label: { fontSize: 14, color: "#2e3036", flex: 1 },
-  labelDisabled: { color: "#a6abb6" }
+  container: { marginVertical: DBSpacing.xs },
+  row: { flexDirection: "row", alignItems: "center", gap: DBSpacing.sm },
+  box: { width: 20, height: 20, borderWidth: 2, borderColor: DBColors.neutral.origin, borderRadius: DBBorderRadius.sm - 1, alignItems: "center", justifyContent: "center" },
+  boxChecked: { backgroundColor: DBColors.neutral[3], borderColor: DBColors.neutral[3] },
+  boxDisabled: { borderColor: DBColors.neutral[9], backgroundColor: DBColors.neutral[13] },
+  tick: { color: DBColors.neutral[14], fontSize: 13, fontWeight: DBTypography.weightBold, fontFamily: DBFontFamily.bold },
+  label: { fontSize: DBTypography.sizeSM, color: DBColors.neutral[3], flex: 1, fontFamily: DBFontFamily.regular },
+  labelDisabled: { color: DBColors.neutral[9] },
 });
 
 const DBCheckbox = forwardRef<View, DBCheckboxProps>(DBCheckboxFn);
@@ -1701,6 +1747,7 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 import DBInfotext from "../infotext/infotext";
 import { DEFAULT_VALID_MESSAGE } from "../../shared/constants";
 import { stringPropVisible } from "../../utils";
+import { DBColors, DBTypography, DBFontFamily, DBSpacing } from "../../shared/tokens";
 import { DBRadioProps } from "./model";
 
 function DBRadioFn(props: DBRadioProps, component: any) {
@@ -1708,7 +1755,7 @@ function DBRadioFn(props: DBRadioProps, component: any) {
 
   function handlePress() {
     if (Boolean(props.disabled)) return;
-    if (props.onChange) (props.onChange as any)(true);
+    if (props.onChange) (props.onChange as any)({ target: { checked: true, value: "on" } });
   }
 
   return (
@@ -1737,13 +1784,13 @@ function DBRadioFn(props: DBRadioProps, component: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { marginVertical: 4 },
-  row: { flexDirection: "row", alignItems: "center", gap: 8 },
-  outer: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: "#646973", alignItems: "center", justifyContent: "center" },
-  outerDisabled: { borderColor: "#a6abb6" },
-  inner: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#ec0016" },
-  label: { fontSize: 14, color: "#2e3036", flex: 1 },
-  labelDisabled: { color: "#a6abb6" }
+  container: { marginVertical: DBSpacing.xs },
+  row: { flexDirection: "row", alignItems: "center", gap: DBSpacing.sm },
+  outer: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: DBColors.neutral.origin, alignItems: "center", justifyContent: "center" },
+  outerDisabled: { borderColor: DBColors.neutral[9] },
+  inner: { width: 10, height: 10, borderRadius: 5, backgroundColor: DBColors.brand.origin },
+  label: { fontSize: DBTypography.sizeSM, color: DBColors.neutral[3], flex: 1, fontFamily: DBFontFamily.regular },
+  labelDisabled: { color: DBColors.neutral[9] },
 });
 
 const DBRadio = forwardRef<View, DBRadioProps>(DBRadioFn);
@@ -1753,10 +1800,10 @@ export default DBRadio;
 	/* ---- DBSelect → Modal picker ---- */
 	'select/select.tsx': `import React, { forwardRef, useState, useId } from "react";
 import { View, Text, Pressable, Modal, FlatList, StyleSheet } from "react-native";
-import * as Haptics from "expo-haptics";
 import DBInfotext from "../infotext/infotext";
 import { DEFAULT_VALID_MESSAGE, DEFAULT_INVALID_MESSAGE } from "../../shared/constants";
 import { stringPropVisible } from "../../utils";
+import { DBColors, DBTypography, DBFontFamily, DBSpacing, DBBorderRadius } from "../../shared/tokens";
 import { DBSelectOptionType, DBSelectProps } from "./model";
 
 function DBSelectFn(props: DBSelectProps, component: any) {
@@ -1772,12 +1819,11 @@ function DBSelectFn(props: DBSelectProps, component: any) {
       ? selectedLabel
       : (selectedLabel as any)?.label ?? selected ?? props.placeholder ?? "";
 
-  async function handleSelect(option: DBSelectOptionType) {
-    await Haptics.selectionAsync();
+  function handleSelect(option: DBSelectOptionType) {
     const val = typeof option === "string" ? option : (option as any).value ?? "";
     setSelected(val);
     setOpen(false);
-    if (props.onChange) (props.onChange as any)(val);
+    if (props.onChange) (props.onChange as any)({ target: { value: val } });
   }
 
   return (
@@ -1803,7 +1849,7 @@ function DBSelectFn(props: DBSelectProps, component: any) {
                 const lbl = typeof item === "string" ? item : (item as any).label ?? val;
                 return (
                   <Pressable
-                    style={({ pressed }) => [styles.option, val === selected && styles.optionSelected, pressed && { backgroundColor: "#edeef0" }]}
+                    style={({ pressed }) => [styles.option, val === selected && styles.optionSelected, pressed && { backgroundColor: DBColors.neutral[12] }]}
                     onPress={() => handleSelect(item)}
                   >
                     <Text style={[styles.optionText, val === selected && styles.optionTextSelected]}>{lbl}</Text>
@@ -1822,18 +1868,18 @@ function DBSelectFn(props: DBSelectProps, component: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { marginVertical: 4 },
-  label: { fontSize: 12, color: "#5a5e68", marginBottom: 4 },
-  trigger: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#646973", borderRadius: 4, padding: 10, backgroundColor: "#ffffff" },
-  triggerDisabled: { borderColor: "#a6abb6", backgroundColor: "#f3f3f5" },
-  triggerText: { flex: 1, fontSize: 14, color: "#2e3036" },
-  arrow: { fontSize: 14, color: "#5a5e68" },
+  container: { marginVertical: DBSpacing.xs },
+  label: { fontSize: DBTypography.size2XS, color: DBColors.neutral[6], marginBottom: DBSpacing.xs, fontFamily: DBFontFamily.regular },
+  trigger: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: DBColors.neutral.origin, borderRadius: DBBorderRadius.sm, padding: 10, backgroundColor: DBColors.neutral[14] },
+  triggerDisabled: { borderColor: DBColors.neutral[9], backgroundColor: DBColors.neutral[13] },
+  triggerText: { flex: 1, fontSize: DBTypography.sizeSM, color: DBColors.neutral[3], fontFamily: DBFontFamily.regular },
+  arrow: { fontSize: DBTypography.sizeSM, color: DBColors.neutral[6] },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "flex-end" },
-  sheet: { backgroundColor: "#ffffff", borderTopLeftRadius: 12, borderTopRightRadius: 12, maxHeight: "50%", padding: 8 },
-  option: { padding: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#e1e2e6" },
-  optionSelected: { backgroundColor: "#edeef0" },
-  optionText: { fontSize: 15, color: "#2e3036" },
-  optionTextSelected: { fontWeight: "bold", color: "#ec0016" }
+  sheet: { backgroundColor: DBColors.neutral[14], borderTopLeftRadius: DBBorderRadius.lg, borderTopRightRadius: DBBorderRadius.lg, maxHeight: "50%", padding: DBSpacing.sm },
+  option: { padding: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: DBColors.neutral[11] },
+  optionSelected: { backgroundColor: DBColors.neutral[12] },
+  optionText: { fontSize: DBTypography.sizeMD, color: DBColors.neutral[3], fontFamily: DBFontFamily.regular },
+  optionTextSelected: { fontWeight: DBTypography.weightBold, color: DBColors.brand.origin, fontFamily: DBFontFamily.bold },
 });
 
 const DBSelect = forwardRef<View, DBSelectProps>(DBSelectFn);
@@ -1846,6 +1892,7 @@ import { View, Text, TextInput as RNTextInput, StyleSheet } from "react-native";
 import DBInfotext from "../infotext/infotext";
 import { DEFAULT_INVALID_MESSAGE, DEFAULT_VALID_MESSAGE } from "../../shared/constants";
 import { stringPropVisible } from "../../utils";
+import { DBColors, DBTypography, DBFontFamily, DBSpacing, DBBorderRadius } from "../../shared/tokens";
 import { DBInputProps } from "./model";
 
 function DBInputFn(props: DBInputProps, component: any) {
@@ -1866,9 +1913,9 @@ function DBInputFn(props: DBInputProps, component: any) {
       <RNTextInput
         style={[styles.input, focused && styles.focused, isInvalid && styles.invalid, isValid && styles.valid, Boolean(props.disabled) && styles.disabled]}
         value={value}
-        onChangeText={(t) => { setValue(t); if (props.onChange) (props.onChange as any)(t); }}
+        onChangeText={(t) => { setValue(t); if (props.onChange) (props.onChange as any)({ target: { value: t } }); }}
         placeholder={String(props.placeholder ?? "")}
-        placeholderTextColor="#a6abb6"
+        placeholderTextColor={DBColors.neutral[9]}
         editable={!Boolean(props.disabled)}
         secureTextEntry={props.type === "password"}
         keyboardType={props.type === "email" ? "email-address" : props.type === "number" || props.type === "tel" ? "numeric" : "default"}
@@ -1888,15 +1935,15 @@ function DBInputFn(props: DBInputProps, component: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { marginVertical: 4 },
-  label: { fontSize: 12, color: "#5a5e68", marginBottom: 4 },
-  required: { color: "#ec0016" },
-  input: { borderWidth: 1, borderColor: "#646973", borderRadius: 4, padding: 10, fontSize: 14, backgroundColor: "#ffffff", color: "#2e3036" },
-  focused: { borderColor: "#257fa8", borderWidth: 2 },
-  invalid: { borderColor: "#ec0016" },
-  valid: { borderColor: "#63a615" },
-  disabled: { borderColor: "#a6abb6", backgroundColor: "#f3f3f5", color: "#a6abb6" },
-  description: { fontSize: 12, color: "#727782", marginTop: 4 }
+  container: { marginVertical: DBSpacing.xs },
+  label: { fontSize: DBTypography.size2XS, color: DBColors.neutral[6], marginBottom: DBSpacing.xs, fontFamily: DBFontFamily.regular },
+  required: { color: DBColors.brand.origin },
+  input: { borderWidth: 1, borderColor: DBColors.neutral.origin, borderRadius: DBBorderRadius.sm, padding: 10, fontSize: DBTypography.sizeSM, backgroundColor: DBColors.neutral[14], color: DBColors.neutral[3], fontFamily: DBFontFamily.regular },
+  focused: { borderColor: DBColors.informational.origin, borderWidth: 2 },
+  invalid: { borderColor: DBColors.critical.origin },
+  valid: { borderColor: DBColors.successful.origin },
+  disabled: { borderColor: DBColors.neutral[9], backgroundColor: DBColors.neutral[13], color: DBColors.neutral[9] },
+  description: { fontSize: DBTypography.size2XS, color: DBColors.neutral[7], marginTop: DBSpacing.xs, fontFamily: DBFontFamily.regular },
 });
 
 const DBInput = forwardRef<RNTextInput, DBInputProps>(DBInputFn);
@@ -1909,6 +1956,7 @@ import { View, Text, TextInput as RNTextInput, StyleSheet } from "react-native";
 import DBInfotext from "../infotext/infotext";
 import { DEFAULT_INVALID_MESSAGE, DEFAULT_VALID_MESSAGE } from "../../shared/constants";
 import { stringPropVisible } from "../../utils";
+import { DBColors, DBTypography, DBFontFamily, DBSpacing, DBBorderRadius } from "../../shared/tokens";
 import { DBTextareaProps } from "./model";
 
 function DBTextareaFn(props: DBTextareaProps, component: any) {
@@ -1928,9 +1976,9 @@ function DBTextareaFn(props: DBTextareaProps, component: any) {
       <RNTextInput
         style={[styles.input, isInvalid && styles.invalid, isValid && styles.valid, Boolean(props.disabled) && styles.disabled]}
         value={value}
-        onChangeText={(t) => { setValue(t); if (props.onChange) (props.onChange as any)(t); }}
+        onChangeText={(t) => { setValue(t); if (props.onChange) (props.onChange as any)({ target: { value: t } }); }}
         placeholder={String(props.placeholder ?? "")}
-        placeholderTextColor="#a6abb6"
+        placeholderTextColor={DBColors.neutral[9]}
         editable={!Boolean(props.disabled)}
         multiline
         numberOfLines={typeof props.rows === "number" ? props.rows : 4}
@@ -1948,13 +1996,13 @@ function DBTextareaFn(props: DBTextareaProps, component: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { marginVertical: 4 },
-  label: { fontSize: 12, color: "#5a5e68", marginBottom: 4 },
-  required: { color: "#ec0016" },
-  input: { borderWidth: 1, borderColor: "#646973", borderRadius: 4, padding: 10, fontSize: 14, backgroundColor: "#ffffff", color: "#2e3036", minHeight: 80 },
-  invalid: { borderColor: "#ec0016" },
-  valid: { borderColor: "#63a615" },
-  disabled: { borderColor: "#a6abb6", backgroundColor: "#f3f3f5", color: "#a6abb6" }
+  container: { marginVertical: DBSpacing.xs },
+  label: { fontSize: DBTypography.size2XS, color: DBColors.neutral[6], marginBottom: DBSpacing.xs, fontFamily: DBFontFamily.regular },
+  required: { color: DBColors.brand.origin },
+  input: { borderWidth: 1, borderColor: DBColors.neutral.origin, borderRadius: DBBorderRadius.sm, padding: 10, fontSize: DBTypography.sizeSM, backgroundColor: DBColors.neutral[14], color: DBColors.neutral[3], minHeight: 80, fontFamily: DBFontFamily.regular },
+  invalid: { borderColor: DBColors.critical.origin },
+  valid: { borderColor: DBColors.successful.origin },
+  disabled: { borderColor: DBColors.neutral[9], backgroundColor: DBColors.neutral[13], color: DBColors.neutral[9] },
 });
 
 const DBTextarea = forwardRef<RNTextInput, DBTextareaProps>(DBTextareaFn);
@@ -1964,7 +2012,7 @@ export default DBTextarea;
 	/* ---- DBCustomSelect → Modal multi-select picker ---- */
 	'custom-select/custom-select.tsx': `import React, { forwardRef, useState } from "react";
 import { View, Text, Pressable, Modal, FlatList, StyleSheet } from "react-native";
-import * as Haptics from "expo-haptics";
+import { DBColors, DBTypography, DBFontFamily, DBSpacing, DBBorderRadius } from "../../shared/tokens";
 import { DBCustomSelectProps } from "./model";
 
 function DBCustomSelectFn(props: DBCustomSelectProps, component: any) {
@@ -1975,8 +2023,7 @@ function DBCustomSelectFn(props: DBCustomSelectProps, component: any) {
   const options = Array.isArray(props.options) ? props.options : [];
   const display = selected.length ? selected.join(", ") : props.placeholder ?? "Select...";
 
-  async function handleSelect(val: string) {
-    await Haptics.selectionAsync();
+  function handleSelect(val: string) {
     let next: string[];
     if (props.multiple) {
       next = selected.includes(val) ? selected.filter((v) => v !== val) : [...selected, val];
@@ -2016,7 +2063,7 @@ function DBCustomSelectFn(props: DBCustomSelectProps, component: any) {
                 const isSel = selected.includes(val);
                 return (
                   <Pressable
-                    style={({ pressed }) => [styles.option, isSel && styles.optionSelected, pressed && { backgroundColor: "#edeef0" }]}
+                    style={({ pressed }) => [styles.option, isSel && styles.optionSelected, pressed && { backgroundColor: DBColors.neutral[12] }]}
                     onPress={() => handleSelect(val)}
                   >
                     {props.multiple && (
@@ -2038,21 +2085,21 @@ function DBCustomSelectFn(props: DBCustomSelectProps, component: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { marginVertical: 4 },
-  label: { fontSize: 12, color: "#5a5e68", marginBottom: 4 },
-  trigger: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#646973", borderRadius: 4, padding: 10, backgroundColor: "#ffffff" },
-  triggerDisabled: { borderColor: "#a6abb6", backgroundColor: "#f3f3f5" },
-  triggerText: { flex: 1, fontSize: 14, color: "#2e3036" },
-  arrow: { fontSize: 14, color: "#5a5e68" },
+  container: { marginVertical: DBSpacing.xs },
+  label: { fontSize: DBTypography.size2XS, color: DBColors.neutral[6], marginBottom: DBSpacing.xs },
+  trigger: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: DBColors.neutral.origin, borderRadius: DBBorderRadius.sm, padding: 10, backgroundColor: DBColors.neutral[14] },
+  triggerDisabled: { borderColor: DBColors.neutral[9], backgroundColor: DBColors.neutral[13] },
+  triggerText: { flex: 1, fontSize: DBTypography.sizeSM, color: DBColors.neutral[3] },
+  arrow: { fontSize: DBTypography.sizeSM, color: DBColors.neutral[6] },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "flex-end" },
-  sheet: { backgroundColor: "#ffffff", borderTopLeftRadius: 12, borderTopRightRadius: 12, maxHeight: "60%", padding: 8 },
-  option: { flexDirection: "row", alignItems: "center", padding: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#e1e2e6" },
-  optionSelected: { backgroundColor: "#edeef0" },
-  optionText: { fontSize: 15, color: "#2e3036", flex: 1 },
-  optionTextSelected: { fontWeight: "bold" },
-  check: { width: 20, height: 20, borderWidth: 2, borderColor: "#646973", borderRadius: 3, alignItems: "center", justifyContent: "center", marginRight: 10 },
-  checkSelected: { backgroundColor: "#ec0016", borderColor: "#ec0016" },
-  checkMark: { color: "#ffffff", fontSize: 12, fontWeight: "bold" }
+  sheet: { backgroundColor: DBColors.neutral[14], borderTopLeftRadius: DBBorderRadius.lg, borderTopRightRadius: DBBorderRadius.lg, maxHeight: "60%", padding: DBSpacing.sm },
+  option: { flexDirection: "row", alignItems: "center", padding: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: DBColors.neutral[11] },
+  optionSelected: { backgroundColor: DBColors.neutral[12] },
+  optionText: { fontSize: DBTypography.sizeMD, color: DBColors.neutral[3], flex: 1 },
+  optionTextSelected: { fontWeight: DBTypography.weightBold },
+  check: { width: 20, height: 20, borderWidth: 2, borderColor: DBColors.neutral.origin, borderRadius: DBBorderRadius.sm, alignItems: "center", justifyContent: "center", marginRight: 10 },
+  checkSelected: { backgroundColor: DBColors.brand.origin, borderColor: DBColors.brand.origin },
+  checkMark: { color: DBColors.neutral[14], fontSize: 12, fontWeight: "bold" }
 });
 
 const DBCustomSelect = forwardRef<View, DBCustomSelectProps>(DBCustomSelectFn);
@@ -2067,25 +2114,45 @@ export default DBCustomSelect;
 const AUTO_COMPONENT_OVERRIDES: Record<string, string> = {
   'badge/badge.tsx': `import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { DBColorPalette, DBTypography, DBFontFamily, DBSpacing, DBBorderRadius } from "../../shared/tokens";
 import type { DBBadgeProps } from "./model";
 
+type SemanticKey = keyof typeof DBColorPalette;
+
 function DBBadge(props: DBBadgeProps) {
+  const semantic: SemanticKey = (props.semantic as SemanticKey) ?? "adaptive";
+  const isStrong = props.emphasis === "strong";
+  const size = props.size ?? "small";
+
+  const palette = DBColorPalette[semantic] ?? DBColorPalette.adaptive;
+  const bgColor     = isStrong ? palette.strongBg   : palette.weakBg;
+  const textColor   = isStrong ? palette.strongText : palette.weakText;
+  const borderColor = palette.border;
+  const fontSize    = size === "medium" ? DBTypography.size2XS : DBTypography.size3XS;
+  const px          = size === "medium" ? DBSpacing.sm : DBSpacing.xs;
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>{props.text ?? props.children}</Text>
+    <View style={[styles.base, { backgroundColor: bgColor, paddingHorizontal: px, borderColor }]}>
+      <Text style={[styles.text, { color: textColor, fontSize }]}>
+        {props.text ?? props.children}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "#ec0016",
-    borderRadius: 10,
-    paddingHorizontal: 6,
+  base: {
+    borderRadius: DBBorderRadius.full,
+    borderWidth: 1,
     paddingVertical: 2,
     alignSelf: "flex-start",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  text: { color: "#ffffff", fontSize: 11, fontWeight: "bold" },
+  text: {
+    fontWeight: DBTypography.weightBold,
+    fontFamily: DBFontFamily.bold,
+  },
 });
 
 export default DBBadge;
@@ -2117,6 +2184,7 @@ export default DBBrand;
 
   'card/card.tsx': `import React from "react";
 import { View, Pressable, StyleSheet } from "react-native";
+import { DBColors, DBBorderRadius, DBSpacing } from "../../shared/tokens";
 import type { DBCardProps } from "./model";
 
 function DBCard(props: DBCardProps) {
@@ -2135,11 +2203,11 @@ function DBCard(props: DBCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#ffffff",
-    borderRadius: 8,
-    padding: 16,
-    marginVertical: 4,
-    shadowColor: "#000",
+    backgroundColor: DBColors.neutral[14],
+    borderRadius: DBBorderRadius.md,
+    padding: DBSpacing.md,
+    marginVertical: DBSpacing.xs,
+    shadowColor: DBColors.neutral[0],
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.12,
     shadowRadius: 4,
@@ -2152,6 +2220,7 @@ export default DBCard;
 
   'divider/divider.tsx': `import React from "react";
 import { View, StyleSheet } from "react-native";
+import { DBColors } from "../../shared/tokens";
 import type { DBDividerProps } from "./model";
 
 function DBDivider(props: DBDividerProps) {
@@ -2167,7 +2236,7 @@ function DBDivider(props: DBDividerProps) {
 }
 
 const styles = StyleSheet.create({
-  divider: { backgroundColor: "#e1e2e6" },
+  divider: { backgroundColor: DBColors.neutral[11] },
   horizontal: { height: 1, alignSelf: "stretch", marginVertical: 8 },
   vertical: { width: 1, alignSelf: "stretch", marginHorizontal: 8 },
 });
@@ -2177,28 +2246,24 @@ export default DBDivider;
 
   'infotext/infotext.tsx': `import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { DBColorPalette, DBTypography, DBFontFamily, DBSpacing } from "../../shared/tokens";
 import type { DBInfotextProps } from "./model";
 
-const semanticColor: Record<string, string> = {
-  informational: "#257fa8",
-  successful: "#63a615",
-  warning: "#f39200",
-  critical: "#ec0016",
-  adaptive: "#5a5e68",
-};
+type SemanticKey = keyof typeof DBColorPalette;
 
 function DBInfotext(props: DBInfotextProps) {
-  const color = semanticColor[props.semantic ?? "adaptive"] ?? "#5a5e68";
+  const sem: SemanticKey = (props.semantic as SemanticKey) ?? "adaptive";
+  const palette = DBColorPalette[sem] ?? DBColorPalette.adaptive;
   return (
     <View style={styles.container}>
-      <Text style={[styles.text, { color }]}>{props.text ?? props.children}</Text>
+      <Text style={[styles.text, { color: palette.weakText }]}>{props.text ?? props.children}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { paddingVertical: 4 },
-  text: { fontSize: 13 },
+  container: { paddingVertical: DBSpacing.xs },
+  text: { fontSize: DBTypography.sizeXS, fontFamily: DBFontFamily.regular },
 });
 
 export default DBInfotext;
@@ -2207,26 +2272,20 @@ export default DBInfotext;
   'notification/notification.tsx': `import React, { useState } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { stringPropVisible } from "../../utils";
+import { DBColorPalette, DBColors, DBTypography, DBFontFamily, DBSpacing, DBBorderRadius } from "../../shared/tokens";
 import type { DBNotificationProps } from "./model";
 import { DEFAULT_CLOSE_BUTTON } from "../../shared/constants";
 
-const semanticBorder: Record<string, string> = {
-  informational: "#257fa8",
-  successful: "#63a615",
-  warning: "#f39200",
-  critical: "#ec0016",
-  adaptive: "#646973",
-};
+type SemanticKey = keyof typeof DBColorPalette;
 
 function DBNotification(props: DBNotificationProps) {
   const [visible, setVisible] = useState(true);
-
   if (!visible) return null;
-
-  const borderColor = semanticBorder[props.semantic ?? "adaptive"] ?? "#646973";
+  const sem: SemanticKey = (props.semantic as SemanticKey) ?? "adaptive";
+  const palette = DBColorPalette[sem] ?? DBColorPalette.adaptive;
 
   return (
-    <View style={[styles.container, { borderLeftColor: borderColor }]} accessibilityRole="alert">
+    <View style={[styles.container, { borderLeftColor: palette.border }]} accessibilityRole="alert">
       {props.image ? <View style={styles.imageSlot}>{props.image as any}</View> : null}
       {stringPropVisible(props.headline, props.showHeadline) ? (
         <Text style={styles.headline}>{props.headline}</Text>
@@ -2239,10 +2298,7 @@ function DBNotification(props: DBNotificationProps) {
       {Boolean(props.closeable) ? (
         <Pressable
           style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.7 }]}
-          onPress={() => {
-            setVisible(false);
-            if (props.onClose) (props.onClose as any)();
-          }}
+          onPress={() => { setVisible(false); if (props.onClose) (props.onClose as any)(); }}
           accessibilityLabel={props.closeButtonText ?? DEFAULT_CLOSE_BUTTON}
           accessibilityRole="button"
         >
@@ -2255,24 +2311,24 @@ function DBNotification(props: DBNotificationProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#ffffff",
-    borderRadius: 8,
+    backgroundColor: DBColors.neutral[14],
+    borderRadius: DBBorderRadius.md,
     borderLeftWidth: 4,
-    borderLeftColor: "#646973",
-    padding: 12,
-    marginVertical: 6,
-    shadowColor: "#000",
+    borderLeftColor: DBColors.neutral.origin,
+    padding: DBSpacing.md,
+    marginVertical: DBSpacing.xs + 2,
+    shadowColor: DBColors.neutral[0],
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
   },
-  imageSlot: { marginBottom: 8 },
-  headline: { fontSize: 16, fontWeight: "bold", marginBottom: 4, color: "#2e3036" },
-  body: { fontSize: 14, color: "#2e3036" },
-  timestamp: { fontSize: 11, color: "#727782", marginTop: 4 },
-  closeBtn: { position: "absolute", top: 8, right: 8, padding: 4 },
-  closeBtnText: { fontSize: 16, color: "#5a5e68" },
+  imageSlot: { marginBottom: DBSpacing.sm },
+  headline: { fontSize: DBTypography.sizeMD, fontWeight: DBTypography.weightBold, marginBottom: DBSpacing.xs, color: DBColors.neutral[3], fontFamily: DBFontFamily.bold },
+  body: { fontSize: DBTypography.sizeSM, color: DBColors.neutral[3], fontFamily: DBFontFamily.regular },
+  timestamp: { fontSize: DBTypography.size3XS, color: DBColors.neutral[7], marginTop: DBSpacing.xs, fontFamily: DBFontFamily.regular },
+  closeBtn: { position: "absolute", top: DBSpacing.sm, right: DBSpacing.sm, padding: DBSpacing.xs },
+  closeBtnText: { fontSize: DBTypography.sizeMD, color: DBColors.neutral[6] },
 });
 
 export default DBNotification;
@@ -2317,6 +2373,7 @@ export default DBStack;
 
   'tag/tag.tsx': `import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
+import { DBColors, DBSpacing, DBBorderRadius } from "../../shared/tokens";
 import { DEFAULT_REMOVE } from "../../shared/constants";
 import type { DBTagProps } from "./model";
 
@@ -2343,17 +2400,17 @@ const styles = StyleSheet.create({
   tag: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#edeef0",
-    borderRadius: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginRight: 4,
-    marginBottom: 4,
+    backgroundColor: DBColors.neutral[12],
+    borderRadius: DBBorderRadius.full,
+    paddingHorizontal: DBSpacing.sm + 2,
+    paddingVertical: DBSpacing.xs,
+    marginRight: DBSpacing.xs,
+    marginBottom: DBSpacing.xs,
     alignSelf: "flex-start",
   },
-  text: { fontSize: 13, color: "#2e3036" },
+  text: { fontSize: 13, color: DBColors.neutral[3] },
   removeBtn: { marginLeft: 6, padding: 2 },
-  removeBtnText: { fontSize: 12, color: "#5a5e68" },
+  removeBtnText: { fontSize: 12, color: DBColors.neutral[6] },
 });
 
 export default DBTag;
@@ -2361,6 +2418,7 @@ export default DBTag;
 
   'tab-list/tab-list.tsx': `import React from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
+import { DBColors } from "../../shared/tokens";
 import type { DBTabListProps } from "./model";
 
 function DBTabList(props: DBTabListProps) {
@@ -2374,7 +2432,7 @@ function DBTabList(props: DBTabListProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { borderBottomWidth: 1, borderBottomColor: "#e0e0e0" },
+  container: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: DBColors.neutral[11] },
   scroll: { flexDirection: "row" },
 });
 
@@ -2383,6 +2441,7 @@ export default DBTabList;
 
   'tab-item/tab-item.tsx': `import React from "react";
 import { Pressable, Text, StyleSheet } from "react-native";
+import { DBColors, DBTypography } from "../../shared/tokens";
 import type { DBTabItemProps } from "./model";
 
 function DBTabItem(props: DBTabItemProps) {
@@ -2409,9 +2468,9 @@ const styles = StyleSheet.create({
     borderBottomColor: "transparent",
     marginRight: 4,
   },
-  selected: { borderBottomColor: "#ec0016" },
-  label: { fontSize: 14, color: "#5a5e68" },
-  labelSelected: { color: "#2e3036", fontWeight: "bold" },
+  selected: { borderBottomColor: DBColors.brand.origin },
+  label: { fontSize: DBTypography.sizeSM, color: DBColors.neutral[6] },
+  labelSelected: { color: DBColors.neutral[3], fontWeight: "bold" },
 });
 
 export default DBTabItem;
@@ -2438,6 +2497,7 @@ export default DBTabPanel;
 
   'custom-select-dropdown/custom-select-dropdown.tsx': `import React from "react";
 import { View, StyleSheet } from "react-native";
+import { DBColors, DBBorderRadius } from "../../shared/tokens";
 import type { DBCustomSelectDropdownProps } from "./model";
 
 function DBCustomSelectDropdown(props: DBCustomSelectDropdownProps) {
@@ -2450,11 +2510,11 @@ const styles = StyleSheet.create({
     top: "100%" as any,
     left: 0,
     right: 0,
-    backgroundColor: "#fff",
-    borderRadius: 6,
+    backgroundColor: DBColors.neutral[14],
+    borderRadius: DBBorderRadius.sm,
     borderWidth: 1,
-    borderColor: "#ccc",
-    shadowColor: "#000",
+    borderColor: DBColors.neutral[11],
+    shadowColor: DBColors.neutral[0],
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
@@ -2502,21 +2562,23 @@ export default DBCustomSelectList;
 
   'custom-select-list-item/custom-select-list-item.tsx': `import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
+import { DBColors, DBTypography, DBBorderRadius, DBSpacing } from "../../shared/tokens";
 import { getBoolean } from "../../utils";
 import type { DBCustomSelectListItemProps } from "./model";
 
 function DBCustomSelectListItem(props: DBCustomSelectListItemProps) {
   const selected = getBoolean(props.checked);
   const disabled = getBoolean(props.disabled);
+  const value = props.value ?? props.label ?? "";
   return (
     <Pressable
       style={({ pressed }) => [
         styles.item,
         selected && styles.selected,
         disabled && styles.disabled,
-        pressed && !disabled && { backgroundColor: "#edeef0" }
+        pressed && !disabled && { backgroundColor: DBColors.neutral[12] }
       ]}
-      onPress={!disabled ? (props.onChange as any) : undefined}
+      onPress={!disabled ? () => { if (props.onChange) (props.onChange as any)({ target: { value, checked: !selected } }); } : undefined}
       disabled={disabled}
       accessibilityRole="menuitem"
       accessibilityState={{ selected, disabled }}
@@ -2534,14 +2596,14 @@ function DBCustomSelectListItem(props: DBCustomSelectListItemProps) {
 }
 
 const styles = StyleSheet.create({
-  item: { flexDirection: "row", alignItems: "center", padding: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#e1e2e6" },
-  selected: { backgroundColor: "#edeef0" },
+  item: { flexDirection: "row", alignItems: "center", padding: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: DBColors.neutral[11] },
+  selected: { backgroundColor: DBColors.neutral[12] },
   disabled: { opacity: 0.4 },
-  check: { width: 18, height: 18, borderWidth: 2, borderColor: "#646973", borderRadius: 3, alignItems: "center", justifyContent: "center", marginRight: 10 },
-  checkSelected: { backgroundColor: "#ec0016", borderColor: "#ec0016" },
-  checkMark: { color: "#ffffff", fontSize: 11, fontWeight: "bold" },
-  label: { fontSize: 14, color: "#2e3036", flex: 1 },
-  disabledText: { color: "#a6abb6" },
+  check: { width: 18, height: 18, borderWidth: 2, borderColor: DBColors.neutral.origin, borderRadius: DBBorderRadius.sm, alignItems: "center", justifyContent: "center", marginRight: 10 },
+  checkSelected: { backgroundColor: DBColors.brand.origin, borderColor: DBColors.brand.origin },
+  checkMark: { color: DBColors.neutral[14], fontSize: 11, fontWeight: "bold" },
+  label: { fontSize: DBTypography.sizeSM, color: DBColors.neutral[3], flex: 1 },
+  disabledText: { color: DBColors.neutral[9] },
 });
 
 export default DBCustomSelectListItem;
@@ -2594,8 +2656,6 @@ function copyAndTransformDir(srcDir: string, destDir: string) {
 // ---------------------------------------------------------------------------
 // Example-file cleanup + spec purge
 // ---------------------------------------------------------------------------
-
-import { unlinkSync } from 'node:fs';
 
 function cleanExamplesAndPurgeSpecs(rootDir: string) {
 	let examplesCleaned = 0;
@@ -2656,8 +2716,72 @@ export default function reactNative(_tmp?: boolean) {
 		// Write design tokens file
 		const sharedDir = join(RN_DEST, 'shared');
 		ensureDir(sharedDir);
-		writeFileSync(join(sharedDir, 'tokens.ts'), DB_TOKENS_FILE, 'utf-8');
+		writeFileSync(join(sharedDir, 'tokens.ts'), buildTokensFile(cssVarMap), 'utf-8');
 		console.log('  [tokens] shared/tokens.ts');
+
+		// Write font provider
+		const providersDir = join(RN_DEST, 'providers');
+		ensureDir(providersDir);
+		const FONT_PROVIDER = `import React, { createContext, useContext } from "react";
+
+interface DBFontContextValue {
+  /** True once Open Sans fonts are loaded and ready. */
+  fontsLoaded: boolean;
+}
+
+const DBFontContext = createContext<DBFontContextValue>({ fontsLoaded: true });
+
+/**
+ * Wrap your app root with DBFontProvider after loading the DB typeface (Open Sans).
+ * Load fonts in your app using expo-font's useFonts with DBFontFamily constants as keys,
+ * then pass the loaded state via the fontsLoaded prop.
+ *
+ * @example
+ * const [fontsLoaded] = useFonts({
+ *   [DBFontFamily.regular]:  require('./assets/fonts/OpenSans-Regular.ttf'),
+ *   [DBFontFamily.medium]:   require('./assets/fonts/OpenSans-Medium.ttf'),
+ *   [DBFontFamily.semiBold]: require('./assets/fonts/OpenSans-SemiBold.ttf'),
+ *   [DBFontFamily.bold]:     require('./assets/fonts/OpenSans-Bold.ttf'),
+ * });
+ * return <DBFontProvider fontsLoaded={fontsLoaded}>{children}</DBFontProvider>;
+ */
+export function DBFontProvider({
+  children,
+  fontsLoaded = false,
+}: {
+  children: React.ReactNode;
+  fontsLoaded?: boolean;
+}) {
+  if (!fontsLoaded) {
+    return null;
+  }
+
+  return (
+    <DBFontContext.Provider value={{ fontsLoaded }}>
+      {children}
+    </DBFontContext.Provider>
+  );
+}
+
+export function useDBFont(): DBFontContextValue {
+  return useContext(DBFontContext);
+}
+`;
+		writeFileSync(join(providersDir, 'font-provider.tsx'), FONT_PROVIDER, 'utf-8');
+		console.log('  [provider] providers/font-provider.tsx');
+
+		// Copy Open Sans font files from foundations into the package assets folder
+		const fontSrcDir = join(REPO_ROOT, 'packages/foundations/assets/fonts');
+		const fontDestDir = join(REPO_ROOT, 'output/react-native/assets/fonts');
+		ensureDir(fontDestDir);
+		for (const name of ['OpenSans-Regular', 'OpenSans-Medium', 'OpenSans-SemiBold', 'OpenSans-Bold']) {
+			const src  = join(fontSrcDir, `${name}.ttf`);
+			const dest = join(fontDestDir, `${name}.ttf`);
+			if (existsSync(src)) {
+				copyFileSync(src, dest);
+				console.log(`  [fonts] assets/fonts/${name}.ttf`);
+			}
+		}
 
 		// Overwrite shared utilities
 		const utilsDir = join(RN_DEST, 'utils');
@@ -2743,78 +2867,24 @@ export const getRootProps = (_props: any, _filter?: string[]): Record<string, un
 			console.log(`  [override] ${relPath}`);
 		}
 
-		// -----------------------------------------------------------------------
-		// CSS → StyleSheet injection for all component overrides
-		// -----------------------------------------------------------------------
-		// For each component, parse its compiled CSS and inject a `cssStyles`
-		// StyleSheet const. In AUTO_COMPONENT_OVERRIDES (the simpler ones, not in
-		// the manual COMPONENT_OVERRIDES), also update the container style to
-		// merge CSS-derived styles with the existing hardcoded ones.
-		// -----------------------------------------------------------------------
-		console.log('  [css→rn] injecting CSS-derived styles into components...');
-		let injected = 0;
-		for (const [relPath] of Object.entries(ALL_COMPONENT_OVERRIDES)) {
-			if (!relPath.endsWith('.tsx')) continue;
-			const componentName = relPath.split('/')[0];
-			const destFile = join(componentsDir, relPath);
-			const styleMap = buildComponentStyles(componentName, cssVarMap);
-			if (Object.keys(styleMap).length === 0) continue;
+		// CSS-derived styles are now embedded directly in each component's override
+		// using design token references from shared/tokens.ts — no injection needed.
 
-			let src = readFileSync(destFile, 'utf-8');
-
-			// Append cssStyles to the file (before the final export default line)
-			const cssStylesCode = renderStyleSheet(styleMap).replace(
-				'const styles = StyleSheet.create(',
-				'const cssStyles = StyleSheet.create('
-			);
-
-			// Ensure StyleSheet is imported
-			if (!src.includes('StyleSheet')) {
-				const rnImportMatch = src.match(/import \{([^}]+)\} from "react-native";/);
-				if (rnImportMatch) {
-					// Add StyleSheet to existing react-native import
-					src = src.replace(
-						rnImportMatch[0],
-						`import { ${rnImportMatch[1].trim()}, StyleSheet } from "react-native";`
-					);
-				} else {
-					// No react-native import — insert after the last import statement
-					const lastImportEnd = [...src.matchAll(/^import .+;$/gm)].at(-1);
-					if (lastImportEnd?.index !== undefined) {
-						const at = lastImportEnd.index + lastImportEnd[0].length;
-						src = src.slice(0, at) + '\nimport { StyleSheet } from "react-native";' + src.slice(at);
-					} else {
-						src = 'import { StyleSheet } from "react-native";\n' + src;
-					}
-				}
+		// Append font provider exports to the generated index.ts
+		const indexPath = join(RN_DEST, 'index.ts');
+		if (existsSync(indexPath)) {
+			const indexContent = readFileSync(indexPath, 'utf-8');
+			if (!indexContent.includes('providers/font-provider')) {
+				writeFileSync(
+					indexPath,
+					indexContent +
+					`\nexport { DBFontProvider, useDBFont } from './providers/font-provider';\n` +
+					`export { DBColorPalette, DBFontFamily } from './shared/tokens';\n`,
+					'utf-8'
+				);
+				console.log('  [index] appended DBFontProvider + DBColorPalette exports');
 			}
-
-			// For AUTO components (not manually crafted), merge cssStyles into container
-			const isAutoOnly = relPath in AUTO_COMPONENT_OVERRIDES &&
-				!(relPath in COMPONENT_OVERRIDES);
-			if (isAutoOnly) {
-				const baseClass = `db-${componentName}`;
-				if (styleMap[baseClass]) {
-					// style={styles.container} → style={[cssStyles['db-xxx'], styles.container]}
-					src = src.replace(
-						/style=\{styles\.container\}/g,
-						`style={[cssStyles['${baseClass}'], styles.container]}`
-					);
-				}
-			}
-
-			// Inject the cssStyles const before the final export line
-			const exportMatch = src.match(/\nexport default /);
-			if (exportMatch && exportMatch.index !== undefined) {
-				src = src.slice(0, exportMatch.index) + '\n' + cssStylesCode + src.slice(exportMatch.index);
-			} else {
-				src += '\n' + cssStylesCode;
-			}
-
-			writeFileSync(destFile, src, 'utf-8');
-			injected++;
 		}
-		console.log(`  [css→rn] injected CSS styles into ${injected} components`);
 
 		// -----------------------------------------------------------------------
 		// Post-process example files and purge spec/test files

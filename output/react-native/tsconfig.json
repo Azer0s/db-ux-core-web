@@ -10,7 +10,7 @@
         "lib": [
             "es2022"
         ],
-        "module": "es2015",
+        "module": "commonjs",
         "moduleResolution": "node",
         "noImplicitAny": false,
         "noImplicitReturns": false,
