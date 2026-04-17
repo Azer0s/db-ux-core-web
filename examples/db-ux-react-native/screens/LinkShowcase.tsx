@@ -1,0 +1,64 @@
+import React from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { DBLink, DBDivider } from "@db-ux/react-native-core-components";
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {children}
+    </View>
+  );
+}
+
+export default function LinkShowcase() {
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      <Section title="Variants">
+        <DBLink variant="adaptive">Adaptive link (follows brand color)</DBLink>
+        <DBLink variant="brand">Brand link (always red)</DBLink>
+        <DBLink variant="inline">Inline link (no arrow, blends with text)</DBLink>
+      </Section>
+
+      <DBDivider />
+
+      <Section title="Sizes">
+        <DBLink size="medium">Medium link (default)</DBLink>
+        <DBLink size="small">Small link</DBLink>
+      </Section>
+
+      <DBDivider />
+
+      <Section title="With content type">
+        <DBLink content="external">External link</DBLink>
+        <DBLink content="internal">Internal link</DBLink>
+      </Section>
+
+      <DBDivider />
+
+      <Section title="In context">
+        <Text style={styles.bodyText}>
+          The DB UX Design System provides a comprehensive set of components for building
+          consistent digital products. Learn more at the{" "}
+          <DBLink variant="inline">design system documentation</DBLink>
+          {" "}or explore the{" "}
+          <DBLink variant="inline">component library on GitHub</DBLink>.
+        </Text>
+      </Section>
+
+      <DBDivider />
+
+      <Section title="With icon">
+        <DBLink showIcon>Navigate forward</DBLink>
+        <DBLink showIcon>Download PDF</DBLink>
+      </Section>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { padding: 16, gap: 24 },
+  section: { gap: 12 },
+  sectionTitle: { fontSize: 13, fontWeight: "700", color: "#727782", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
+  bodyText: { fontSize: 14, lineHeight: 22, color: "#2e3036" },
+});
