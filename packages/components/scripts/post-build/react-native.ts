@@ -1263,65 +1263,53 @@ import {
   ScrollView,
   Animated,
   StyleSheet,
+  Dimensions,
 } from "react-native";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
 import { DBDrawerProps } from "./model";
 
 const DURATION = 260;
-const DRAWER_WIDTH = 320;
+const DRAWER_SIZE = 320;
 
-function mkStyles(c: typeof DBTheme.light) {
-  return {
-    overlay: { flex: 1, flexDirection: "row" as const },
-    backdrop: {
-      position: "absolute" as const,
-      top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: "rgba(0,0,0,0.4)",
-    },
-    drawer: {
-      width: DRAWER_WIDTH,
-      backgroundColor: c.bg,
-      flexDirection: "column" as const,
-      shadowColor: c.shadowColor,
-      shadowOffset: { width: 2, height: 0 },
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-      elevation: 8,
-    },
-    drawerHeader: {
-      padding: 16,
-      flexDirection: "row" as const,
-      justifyContent: "flex-end" as const,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: c.border,
-    },
-    closeBtn: { fontSize: 20, color: c.text },
-    content: { flex: 1, padding: 16 },
-  };
+/** Returns the hidden-state translation value for a given direction. */
+function hiddenOffset(direction: string): number {
+  const { width, height } = Dimensions.get("window");
+  switch (direction) {
+    case "right":  return DRAWER_SIZE;     // slides in from right
+    case "up":     return -(height * 0.6); // slides in from top
+    case "down":   return height * 0.6;    // slides in from bottom
+    default:       return -DRAWER_SIZE;    // left (default)
+  }
 }
 
 function DBDrawerFn(props: DBDrawerProps, component: any) {
   const { isDark } = useDBFont();
-  const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
+  const c = isDark ? DBTheme.dark : DBTheme.light;
+  const direction = props.direction ?? "left";
   const isOpen = Boolean(props.open);
-  const translateX = useRef(new Animated.Value(isOpen ? 0 : -DRAWER_WIDTH)).current;
+
+  const anim = useRef(new Animated.Value(isOpen ? 0 : hiddenOffset(direction))).current;
 
   useEffect(() => {
-    Animated.timing(translateX, {
-      toValue: isOpen ? 0 : -DRAWER_WIDTH,
+    Animated.timing(anim, {
+      toValue: isOpen ? 0 : hiddenOffset(direction),
       duration: DURATION,
       useNativeDriver: true,
     }).start();
-  }, [isOpen]);
+  }, [isOpen, direction]);
 
-  const direction = props.direction ?? "left";
   const isVertical = direction === "up" || direction === "down";
-  const transform = isVertical
-    ? [{ translateY: translateX }]
-    : [{ translateX: translateX }];
+  const transform = isVertical ? [{ translateY: anim }] : [{ translateX: anim }];
 
-  const styles = mkStyles(c);
+  // Overlay layout: position drawer on the correct edge
+  const overlayStyle = isVertical
+    ? { flex: 1, flexDirection: "column" as const, justifyContent: direction === "down" ? "flex-end" as const : "flex-start" as const }
+    : { flex: 1, flexDirection: "row" as const, justifyContent: direction === "right" ? "flex-end" as const : "flex-start" as const };
+
+  const drawerStyle = isVertical
+    ? { width: "100%" as any, maxHeight: "60%" as any }
+    : { width: DRAWER_SIZE, alignSelf: "stretch" as const };
 
   return (
     <Modal
@@ -1330,20 +1318,32 @@ function DBDrawerFn(props: DBDrawerProps, component: any) {
       animationType="none"
       onRequestClose={() => props.onClose?.()}
     >
-      <View style={styles.overlay} ref={component}>
+      <View style={overlayStyle} ref={component}>
         <Pressable
-          style={styles.backdrop}
+          style={StyleSheet.absoluteFillObject}
           onPress={() => props.backdrop !== "none" && props.onClose?.()}
         />
-        <Animated.View style={[styles.drawer, { transform }]}>
-          <View style={styles.drawerHeader}>
+        <Animated.View style={[
+          drawerStyle,
+          {
+            backgroundColor: c.bgElevated,
+            flexDirection: "column",
+            shadowColor: c.shadowColor,
+            shadowOffset: { width: direction === "right" ? -2 : 2, height: direction === "down" ? -2 : (isVertical ? 2 : 0) },
+            shadowOpacity: 0.2,
+            shadowRadius: 8,
+            elevation: 8,
+          },
+          { transform },
+        ]}>
+          <View style={[styles.drawerHeader, { borderBottomColor: c.border }]}>
             <Pressable
               onPress={() => props.onClose?.()}
               accessibilityLabel={props.closeButtonText ?? "Close"}
               accessibilityRole="button"
               style={({ pressed }) => [pressed && { opacity: 0.7 }]}
             >
-              <Text style={styles.closeBtn}>✕</Text>
+              <Text style={[styles.closeBtn, { color: c.text }]}>✕</Text>
             </Pressable>
           </View>
           <ScrollView style={styles.content}>{props.children}</ScrollView>
@@ -1352,6 +1352,17 @@ function DBDrawerFn(props: DBDrawerProps, component: any) {
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  drawerHeader: {
+    padding: 16,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  closeBtn: { fontSize: 20 },
+  content: { flex: 1, padding: 16 },
+});
 
 const DBDrawer = forwardRef<View, DBDrawerProps>(DBDrawerFn);
 export default DBDrawer;
