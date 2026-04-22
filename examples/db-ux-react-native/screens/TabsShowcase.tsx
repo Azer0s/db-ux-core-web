@@ -8,17 +8,20 @@ import {
   DBBadge,
   DBButton,
 } from "@db-ux/react-native-core-components";
+import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={[styles.sectionTitle, { color: c.muted }]}>{title}</Text>
       {children}
     </View>
   );
 }
 
 export default function TabsShowcase() {
+  const c = useScreenColors();
   const [activeTab, setActiveTab] = useState(0);
   const [activeVertical, setActiveVertical] = useState(0);
 
@@ -27,7 +30,7 @@ export default function TabsShowcase() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.heading}>Tabs</Text>
+      <Text style={[styles.heading, { color: c.heading }]}>Tabs</Text>
 
       <Section title="DBTabs — items prop (auto-managed)">
         <View style={styles.tabContainer}>
@@ -56,7 +59,7 @@ export default function TabsShowcase() {
           activeTab === i ? (
             <DBTabPanel key={label}>
               <View style={styles.panelContent}>
-                <Text style={styles.panelText}>{label} panel content</Text>
+                <Text style={[styles.panelText, { color: c.body }]}>{label} panel content</Text>
                 <DBBadge semantic="informational">{label}</DBBadge>
               </View>
             </DBTabPanel>
@@ -76,8 +79,8 @@ export default function TabsShowcase() {
               />
             ))}
           </DBTabList>
-          <View style={styles.verticalPanel}>
-            <Text style={styles.panelText}>{vTabs[activeVertical]} content</Text>
+          <View style={[styles.verticalPanel, { backgroundColor: c.surface }]}>
+            <Text style={[styles.panelText, { color: c.body }]}>{vTabs[activeVertical]} content</Text>
           </View>
         </View>
       </Section>
@@ -100,15 +103,15 @@ export default function TabsShowcase() {
 
 const styles = StyleSheet.create({
   container: { padding: 20, gap: 8 },
-  heading: { fontSize: 24, fontWeight: "700", marginBottom: 8, color: "#16181b" },
+  heading: { fontSize: 24, fontWeight: "700", marginBottom: 8 },
   section: { marginBottom: 16, gap: 6 },
   sectionTitle: {
-    fontSize: 13, fontWeight: "600", color: "#5a5e68",
+    fontSize: 13, fontWeight: "600",
     marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5,
   },
   tabContainer: { minHeight: 120 },
   panelContent: { gap: 8, alignItems: "flex-start" },
-  panelText: { fontSize: 14, color: "#2e3036" },
+  panelText: { fontSize: 14 },
   verticalLayout: { gap: 8 },
-  verticalPanel: { padding: 12, backgroundColor: "#f3f3f5", borderRadius: 8 },
+  verticalPanel: { padding: 12, borderRadius: 8 },
 });

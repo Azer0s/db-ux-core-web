@@ -1,20 +1,23 @@
 import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { DBBadge } from "@db-ux/react-native-core-components";
+import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={[styles.sectionTitle, { color: c.subtle }]}>{title}</Text>
       <View style={styles.row}>{children}</View>
     </View>
   );
 }
 
 export default function BadgeShowcase() {
+  const c = useScreenColors();
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.heading}>DBBadge</Text>
+      <Text style={[styles.heading, { color: c.heading }]}>DBBadge</Text>
 
       <Section title="Semantic">
         <DBBadge>(Default) Adaptive</DBBadge>
@@ -58,42 +61,12 @@ export default function BadgeShowcase() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    gap: 8,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: "700",
-    marginBottom: 8,
-    color: "#16181b",
-  },
-  section: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#5a5e68",
-    marginBottom: 8,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  row: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    alignItems: "center",
-  },
-  placementContainer: {
-    width: 40,
-    height: 40,
-    position: "relative",
-  },
-  iconPlaceholder: {
-    width: 40,
-    height: 40,
-    backgroundColor: "#e5e7eb",
-    borderRadius: 8,
-  },
+  container: { padding: 20, gap: 8 },
+  heading: { fontSize: 24, fontWeight: "700", marginBottom: 8 },
+  section: { marginBottom: 16 },
+  sectionTitle: { fontSize: 13, fontWeight: "600", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 },
+  row: { flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" },
+  placementContainer: { width: 40, height: 40, position: "relative" },
+  iconPlaceholder: { width: 40, height: 40, backgroundColor: "#e5e7eb", borderRadius: 8 },
 });
+

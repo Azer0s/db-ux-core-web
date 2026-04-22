@@ -1,17 +1,20 @@
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { DBInput, DBButton } from "@db-ux/react-native-core-components";
+import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={[styles.sectionTitle, { color: c.muted }]}>{title}</Text>
       {children}
     </View>
   );
 }
 
 export default function InputShowcase() {
+  const c = useScreenColors();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,7 +26,7 @@ export default function InputShowcase() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.heading}>DBInput</Text>
+      <Text style={[styles.heading, { color: c.heading }]}>DBInput</Text>
 
       <Section title="Basic">
         <DBInput label="Name" placeholder="Enter your name" />
@@ -127,7 +130,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "700",
     marginBottom: 8,
-    color: "#16181b",
   },
   section: {
     marginBottom: 16,
@@ -136,7 +138,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#5a5e68",
     marginBottom: 4,
     textTransform: "uppercase",
     letterSpacing: 0.5,

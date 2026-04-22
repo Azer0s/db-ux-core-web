@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { DBTag } from "@db-ux/react-native-core-components";
+import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={[styles.sectionTitle, { color: c.subtle }]}>{title}</Text>
       {children}
     </View>
   );
@@ -18,6 +20,7 @@ function Row({ children }: { children: React.ReactNode }) {
 const SEMANTICS = ["neutral", "informational", "successful", "warning", "critical"] as const;
 
 export default function TagShowcase() {
+  const c = useScreenColors();
   const [removed, setRemoved] = useState<Set<string>>(new Set());
 
   return (
@@ -62,7 +65,7 @@ export default function TagShowcase() {
           )}
         </Row>
         {removed.size > 0 && (
-          <Text style={styles.hint}>Removed: {[...removed].join(", ")}</Text>
+          <Text style={[styles.hint, { color: c.subtle }]}>Removed: {[...removed].join(", ")}</Text>
         )}
       </Section>
 
@@ -80,7 +83,7 @@ export default function TagShowcase() {
 const styles = StyleSheet.create({
   container: { padding: 16, gap: 24 },
   section: { gap: 12 },
-  sectionTitle: { fontSize: 13, fontWeight: "700", color: "#727782", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
+  sectionTitle: { fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
   row: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  hint: { fontSize: 12, color: "#727782", fontStyle: "italic" },
+  hint: { fontSize: 12, fontStyle: "italic" },
 });

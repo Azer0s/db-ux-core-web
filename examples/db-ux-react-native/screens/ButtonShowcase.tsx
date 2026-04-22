@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { DBButton } from "@db-ux/react-native-core-components";
+import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={[styles.sectionTitle, { color: c.muted }]}>{title}</Text>
       <View style={styles.row}>{children}</View>
     </View>
   );
@@ -13,10 +15,11 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function ButtonShowcase() {
   const [pressCount, setPressCount] = useState(0);
+  const c = useScreenColors();
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.heading}>DBButton</Text>
+      <Text style={[styles.heading, { color: c.heading }]}>DBButton</Text>
 
       <Section title="Variants">
         <DBButton variant="outlined" onClick={() => setPressCount((n) => n + 1)}>

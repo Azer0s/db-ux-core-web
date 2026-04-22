@@ -1,17 +1,20 @@
 import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { DBLink, DBDivider } from "@db-ux/react-native-core-components";
+import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={[styles.sectionTitle, { color: c.subtle }]}>{title}</Text>
       {children}
     </View>
   );
 }
 
 export default function LinkShowcase() {
+  const c = useScreenColors();
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Section title="Variants">
@@ -37,7 +40,7 @@ export default function LinkShowcase() {
       <DBDivider />
 
       <Section title="In context">
-        <Text style={styles.bodyText}>
+        <Text style={[styles.bodyText, { color: c.body }]}>
           The DB UX Design System provides a comprehensive set of components for building
           consistent digital products. Learn more at the{" "}
           <DBLink variant="inline">design system documentation</DBLink>
@@ -59,6 +62,6 @@ export default function LinkShowcase() {
 const styles = StyleSheet.create({
   container: { padding: 16, gap: 24 },
   section: { gap: 12 },
-  sectionTitle: { fontSize: 13, fontWeight: "700", color: "#727782", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
-  bodyText: { fontSize: 14, lineHeight: 22, color: "#2e3036" },
+  sectionTitle: { fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
+  bodyText: { fontSize: 14, lineHeight: 22 },
 });

@@ -8,20 +8,23 @@ import {
   DBButton,
   DBDivider,
 } from "@db-ux/react-native-core-components";
+import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={[styles.sectionTitle, { color: c.muted }]}>{title}</Text>
       {children}
     </View>
   );
 }
 
 export default function NavigationShowcase() {
+  const c = useScreenColors();
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.heading}>Navigation</Text>
+      <Text style={[styles.heading, { color: c.heading }]}>Navigation</Text>
 
       <Section title="DBLink">
         <DBLink href="https://design-system.deutschebahn.com">DB Design System</DBLink>
@@ -72,10 +75,10 @@ export default function NavigationShowcase() {
 
 const styles = StyleSheet.create({
   container: { padding: 20, gap: 8 },
-  heading: { fontSize: 24, fontWeight: "700", marginBottom: 8, color: "#16181b" },
+  heading: { fontSize: 24, fontWeight: "700", marginBottom: 8 },
   section: { marginBottom: 16, gap: 6 },
   sectionTitle: {
-    fontSize: 13, fontWeight: "600", color: "#5a5e68",
+    fontSize: 13, fontWeight: "600",
     marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5,
   },
   navContainer: {

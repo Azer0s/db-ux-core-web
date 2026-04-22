@@ -978,8 +978,12 @@ export default DBNavigationItem;
 	/* ---- DBIcon → @expo/vector-icons MaterialIcons ---- */
 	'icon/icon.tsx': `import React, { forwardRef } from "react";
 import { View, Text, StyleSheet } from "react-native";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { DBIconProps } from "./model";
+
+// Lazy type-only import so @expo/vector-icons is NOT required at module load time.
+// A top-level static import triggers Platform → TurboModuleRegistry.getEnforcing('PlatformConstants')
+// before the bridgeless runtime is ready, crashing the app in Expo Go.
+type MaterialIconsType = React.ComponentType<{ name: string; size: number; style?: any; accessibilityElementsHidden?: boolean }>;
 
 /**
  * DBIcon wraps \`@expo/vector-icons\` MaterialIcons.
@@ -987,11 +991,14 @@ import { DBIconProps } from "./model";
  * The \`weight\` prop maps to icon size (16/20/24/32/48/64).
  */
 function DBIconFn(props: DBIconProps, component: any) {
+  // Lazy require: only loaded when the component renders, after the JS runtime is ready.
+  const MaterialIcons: MaterialIconsType = require("@expo/vector-icons/MaterialIcons").default;
+
   const sizeMap: Record<string, number> = {
     "16": 16, "20": 20, "24": 24, "32": 32, "48": 48, "64": 64
   };
   const size = props.weight ? (sizeMap[props.weight] ?? 24) : 24;
-  const iconName = props.icon as React.ComponentProps<typeof MaterialIcons>["name"] | undefined;
+  const iconName = props.icon as string | undefined;
 
   if (!iconName) {
     return props.text ? (
@@ -1904,9 +1911,9 @@ function mkStyles(c: typeof DBTheme.light) {
   return {
     container: { marginVertical: DBSpacing.xs },
     row: { flexDirection: "row" as const, alignItems: "center" as const, gap: DBSpacing.sm },
-    outer: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: c.borderStrong, alignItems: "center" as const, justifyContent: "center" as const },
+    outer: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: c.borderStrong, overflow: "hidden" as const },
     outerDisabled: { borderColor: c.textDisabled },
-    inner: { width: 10, height: 10, borderRadius: 5, backgroundColor: c.brandPrimary },
+    inner: { position: "absolute" as const, top: 3, left: 3, width: 10, height: 10, borderRadius: 5, backgroundColor: c.brandPrimary },
     label: { fontSize: DBTypography.sizeSM, color: c.text, flex: 1, fontFamily: DBFontFamily.regular },
     labelDisabled: { color: c.textDisabled },
   };
