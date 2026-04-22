@@ -1911,8 +1911,12 @@ function mkStyles(c: typeof DBTheme.light) {
   return {
     container: { marginVertical: DBSpacing.xs },
     row: { flexDirection: "row" as const, alignItems: "center" as const, gap: DBSpacing.sm },
-    outer: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: c.borderStrong, justifyContent: "center" as const, alignItems: "center" as const },
-    outerDisabled: { borderColor: c.textDisabled },
+    // Wrap: plain 20×20 flex container with no border so flexbox centering is unambiguous.
+    // The ring and the dot are siblings — ring is absolute-positioned to fill the wrap,
+    // dot is a flex child centered by justify/alignItems center.
+    wrap: { width: 20, height: 20, justifyContent: "center" as const, alignItems: "center" as const },
+    ring: { position: "absolute" as const, top: 0, left: 0, width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: c.borderStrong },
+    ringDisabled: { borderColor: c.textDisabled },
     inner: { width: 10, height: 10, borderRadius: 5, backgroundColor: c.brandPrimary },
     label: { fontSize: DBTypography.sizeSM, color: c.text, flex: 1, fontFamily: DBFontFamily.regular },
     labelDisabled: { color: c.textDisabled },
@@ -1939,7 +1943,8 @@ function DBRadioFn(props: DBRadioProps, component: any) {
         accessibilityRole="radio"
         accessibilityState={{ checked, disabled: Boolean(props.disabled) }}
       >
-        <View style={[styles.outer, Boolean(props.disabled) && styles.outerDisabled]}>
+        <View style={styles.wrap}>
+          <View style={[styles.ring, Boolean(props.disabled) && styles.ringDisabled]} />
           {checked && <View style={styles.inner} />}
         </View>
         {(props.label || props.children) && (
