@@ -1911,9 +1911,9 @@ function mkStyles(c: typeof DBTheme.light) {
   return {
     container: { marginVertical: DBSpacing.xs },
     row: { flexDirection: "row" as const, alignItems: "center" as const, gap: DBSpacing.sm },
-    outer: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: c.borderStrong, overflow: "hidden" as const },
+    outer: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: c.borderStrong, justifyContent: "center" as const, alignItems: "center" as const },
     outerDisabled: { borderColor: c.textDisabled },
-    inner: { position: "absolute" as const, top: 3, left: 3, width: 10, height: 10, borderRadius: 5, backgroundColor: c.brandPrimary },
+    inner: { width: 10, height: 10, borderRadius: 5, backgroundColor: c.brandPrimary },
     label: { fontSize: DBTypography.sizeSM, color: c.text, flex: 1, fontFamily: DBFontFamily.regular },
     labelDisabled: { color: c.textDisabled },
   };
