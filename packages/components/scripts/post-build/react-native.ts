@@ -879,6 +879,122 @@ export const DBBorderRadius = {
 
 const COMPONENT_OVERRIDES: Record<string, string> = {
 
+	/* ---- DBText → themed Text ---- */
+	'text/model.ts': `export interface DBTextProps {
+  /** Semantic text style — controls colour and default size/weight. */
+  variant?: "body" | "heading" | "label" | "subtle" | "caption" | "overline" | "brand" | "disabled";
+  /** Override font size. */
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  /** Override font weight. */
+  weight?: "regular" | "medium" | "bold";
+  children?: React.ReactNode;
+  style?: any;
+  numberOfLines?: number;
+  ellipsizeMode?: "head" | "middle" | "tail" | "clip";
+  onPress?: () => void;
+  selectable?: boolean;
+  accessibilityLabel?: string;
+  testID?: string;
+}
+`,
+
+	'text/text.tsx': `import React from "react";
+import { Text } from "react-native";
+import { useDBFont } from "../../providers/font-provider";
+import { DBTheme, DBTypography, DBFontFamily } from "../../shared/tokens";
+import type { DBTextProps } from "./model";
+
+const VARIANT_COLOR: Record<NonNullable<DBTextProps["variant"]>, keyof typeof DBTheme.light> = {
+  body:     "text",
+  heading:  "text",
+  label:    "textMuted",
+  subtle:   "textSubtle",
+  caption:  "textSubtle",
+  overline: "textSubtle",
+  brand:    "brandText",
+  disabled: "textDisabled",
+};
+
+const VARIANT_SIZE: Record<NonNullable<DBTextProps["variant"]>, number> = {
+  body:     DBTypography.sizeMD,
+  heading:  DBTypography.sizeLG,
+  label:    DBTypography.sizeSM,
+  subtle:   DBTypography.sizeSM,
+  caption:  DBTypography.size2XS,
+  overline: DBTypography.size2XS,
+  brand:    DBTypography.sizeMD,
+  disabled: DBTypography.sizeMD,
+};
+
+const VARIANT_WEIGHT: Record<NonNullable<DBTextProps["variant"]>, string> = {
+  body:     DBTypography.weightRegular,
+  heading:  DBTypography.weightBold,
+  label:    DBTypography.weightMedium,
+  subtle:   DBTypography.weightRegular,
+  caption:  DBTypography.weightRegular,
+  overline: DBTypography.weightMedium,
+  brand:    DBTypography.weightMedium,
+  disabled: DBTypography.weightRegular,
+};
+
+const SIZE_MAP: Record<NonNullable<DBTextProps["size"]>, number> = {
+  xs: DBTypography.size2XS,
+  sm: DBTypography.sizeSM,
+  md: DBTypography.sizeMD,
+  lg: DBTypography.sizeLG,
+  xl: DBTypography.sizeXL,
+};
+
+const WEIGHT_MAP: Record<NonNullable<DBTextProps["weight"]>, string> = {
+  regular: DBTypography.weightRegular,
+  medium:  DBTypography.weightMedium,
+  bold:    DBTypography.weightBold,
+};
+
+const FONT_FAMILY_MAP: Record<NonNullable<DBTextProps["weight"]>, string> = {
+  regular: DBFontFamily.regular,
+  medium:  DBFontFamily.medium,
+  bold:    DBFontFamily.bold,
+};
+
+function DBText(props: DBTextProps) {
+  const { isDark } = useDBFont();
+  const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
+  const variant = props.variant ?? "body";
+
+  const colorKey = VARIANT_COLOR[variant];
+  const fontSize = props.size ? SIZE_MAP[props.size] : VARIANT_SIZE[variant];
+  const fontWeightStr = props.weight ? WEIGHT_MAP[props.weight] : VARIANT_WEIGHT[variant];
+  const weightKey = (props.weight ?? (fontWeightStr === DBTypography.weightBold ? "bold" : fontWeightStr === DBTypography.weightMedium ? "medium" : "regular")) as NonNullable<DBTextProps["weight"]>;
+
+  const letterSpacing = variant === "overline" ? 0.8 : undefined;
+  const textTransform = variant === "overline" ? "uppercase" as const : undefined;
+
+  const { variant: _v, size: _s, weight: _w, style, children, ...rest } = props;
+
+  return (
+    <Text
+      style={[
+        {
+          color: c[colorKey],
+          fontSize,
+          fontWeight: fontWeightStr as any,
+          fontFamily: FONT_FAMILY_MAP[weightKey],
+          ...(letterSpacing !== undefined ? { letterSpacing } : {}),
+          ...(textTransform !== undefined ? { textTransform } : {}),
+        },
+        style,
+      ]}
+      {...rest}
+    >
+      {children}
+    </Text>
+  );
+}
+
+export default DBText;
+`,
+
 	/* ---- DBPage → SafeAreaView (built-in react-native) + StatusBar ---- */
 	'page/page.tsx': `import React, { forwardRef } from "react";
 import { View, SafeAreaView, StatusBar, StyleSheet } from "react-native";
@@ -3140,7 +3256,9 @@ export const getRootProps = (_props: any, _filter?: string[]): Record<string, un
 					indexContent +
 					`\nexport { DBFontProvider, useDBFont } from './providers/font-provider';\n` +
 					`export { DBColorPalette, DBColorPaletteDark, DBTheme, DBFontFamily } from './shared/tokens';\n` +
-					`export type { DBThemeColors } from './shared/tokens';\n`,
+					`export type { DBThemeColors } from './shared/tokens';\n` +
+					`export { default as DBText } from './components/text/text';\n` +
+					`export type { DBTextProps } from './components/text/model';\n`,
 					'utf-8'
 				);
 				console.log('  [index] appended DBFontProvider + DBColorPalette exports');

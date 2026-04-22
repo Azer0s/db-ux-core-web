@@ -1,20 +1,17 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { DBTooltip, DBPopover, DBButton, DBBadge, DBCard } from "@db-ux/react-native-core-components";
-import { useScreenColors } from "./theme";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { DBTooltip, DBPopover, DBButton, DBBadge, DBCard, DBText } from "@db-ux/react-native-core-components";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: c.subtle }]}>{title}</Text>
+      <DBText variant="overline" style={styles.sectionTitle}>{title}</DBText>
       {children}
     </View>
   );
 }
 
 export default function OverlayShowcase() {
-  const c = useScreenColors();
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [popoverInfoOpen, setPopoverInfoOpen] = useState(false);
 
@@ -24,7 +21,7 @@ export default function OverlayShowcase() {
         <View style={styles.row}>
           <DBTooltip variant="description">
             <DBButton>Hover / tap me</DBButton>
-            <Text>This tooltip describes the button action in more detail.</Text>
+            <DBText variant="body">This tooltip describes the button action in more detail.</DBText>
           </DBTooltip>
         </View>
       </Section>
@@ -33,7 +30,7 @@ export default function OverlayShowcase() {
         <View style={styles.row}>
           <DBTooltip variant="label" placement="top">
             <DBBadge semantic="informational">ⓘ</DBBadge>
-            <Text>Informational badge</Text>
+            <DBText variant="body">Informational badge</DBText>
           </DBTooltip>
         </View>
       </Section>
@@ -43,7 +40,7 @@ export default function OverlayShowcase() {
           {(["top", "bottom", "left", "right"] as const).map((placement) => (
             <DBTooltip key={placement} variant="description" placement={placement}>
               <DBButton variant="ghost">{placement}</DBButton>
-              <Text>Tooltip on the {placement}</Text>
+              <DBText variant="body">Tooltip on the {placement}</DBText>
             </DBTooltip>
           ))}
         </View>
@@ -55,10 +52,10 @@ export default function OverlayShowcase() {
         </DBButton>
         <DBPopover open={popoverOpen}>
           <DBCard elevationLevel="3">
-            <Text style={[styles.popoverTitle, { color: c.heading }]}>Popover content</Text>
-            <Text style={[styles.popoverBody, { color: c.body }]}>
+            <DBText variant="heading" style={styles.popoverTitle}>Popover content</DBText>
+            <DBText variant="body" style={styles.popoverBody}>
               Popovers can contain rich content like cards, lists, and actions.
-            </Text>
+            </DBText>
             <DBButton onClick={() => setPopoverOpen(false)}>Close</DBButton>
           </DBCard>
         </DBPopover>
@@ -71,9 +68,9 @@ export default function OverlayShowcase() {
           </DBButton>
           <DBPopover open={popoverInfoOpen} placement="top">
             <View style={styles.infoPopover}>
-              <Text style={[styles.popoverBody, { color: c.body }]}>
+              <DBText variant="body" style={styles.popoverBody}>
                 A popover is a floating panel anchored to a trigger element. It stays open until explicitly dismissed.
-              </Text>
+              </DBText>
             </View>
           </DBPopover>
         </View>
