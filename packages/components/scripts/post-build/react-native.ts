@@ -1911,13 +1911,12 @@ function mkStyles(c: typeof DBTheme.light) {
   return {
     container: { marginVertical: DBSpacing.xs },
     row: { flexDirection: "row" as const, alignItems: "center" as const, gap: DBSpacing.sm },
-    // Wrap: plain 20×20 flex container with no border so flexbox centering is unambiguous.
-    // The ring and the dot are siblings — ring is absolute-positioned to fill the wrap,
-    // dot is a flex child centered by justify/alignItems center.
-    wrap: { width: 20, height: 20, justifyContent: "center" as const, alignItems: "center" as const },
-    ring: { position: "absolute" as const, top: 0, left: 0, width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: c.borderStrong },
-    ringDisabled: { borderColor: c.textDisabled },
-    inner: { width: 10, height: 10, borderRadius: 5, backgroundColor: c.brandPrimary, marginLeft: -1 },
+    // Ring 20dp, border 2dp → content area 16dp. Dot 8dp → offset (16-8)/2 = 4dp.
+    // 4dp × any common density (0.75/1/1.5/2/3/4) always yields an integer pixel count.
+    // A 10dp dot gives 3dp offset = 4.5px at 1.5× → non-integer → visual misalignment.
+    wrap: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: c.borderStrong, justifyContent: "center" as const, alignItems: "center" as const },
+    wrapDisabled: { borderColor: c.textDisabled },
+    inner: { width: 8, height: 8, borderRadius: 4, backgroundColor: c.brandPrimary },
     label: { fontSize: DBTypography.sizeSM, color: c.text, flex: 1, fontFamily: DBFontFamily.regular },
     labelDisabled: { color: c.textDisabled },
   };
@@ -1943,8 +1942,7 @@ function DBRadioFn(props: DBRadioProps, component: any) {
         accessibilityRole="radio"
         accessibilityState={{ checked, disabled: Boolean(props.disabled) }}
       >
-        <View style={styles.wrap}>
-          <View style={[styles.ring, Boolean(props.disabled) && styles.ringDisabled]} />
+        <View style={[styles.wrap, Boolean(props.disabled) && styles.wrapDisabled]}>
           {checked && <View style={styles.inner} />}
         </View>
         {(props.label || props.children) && (
