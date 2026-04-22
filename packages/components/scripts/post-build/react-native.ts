@@ -1917,7 +1917,7 @@ function mkStyles(c: typeof DBTheme.light) {
     wrap: { width: 20, height: 20, justifyContent: "center" as const, alignItems: "center" as const },
     ring: { position: "absolute" as const, top: 0, left: 0, width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: c.borderStrong },
     ringDisabled: { borderColor: c.textDisabled },
-    inner: { width: 10, height: 10, borderRadius: 5, backgroundColor: c.brandPrimary },
+    inner: { width: 10, height: 10, borderRadius: 5, backgroundColor: c.brandPrimary, marginLeft: -1 },
     label: { fontSize: DBTypography.sizeSM, color: c.text, flex: 1, fontFamily: DBFontFamily.regular },
     labelDisabled: { color: c.textDisabled },
   };
