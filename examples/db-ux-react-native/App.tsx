@@ -66,7 +66,6 @@ function AppInner({ onToggleScheme }: { onToggleScheme: () => void }) {
   const tabTextColor = isDark ? "#a6abb6" : "#5a5e68";
   const tabActiveColor = "#ec0016";
   const toggleBg = isDark ? "#2e3036" : "#f3f3f5";
-  const toggleTextColor = isDark ? "#edeef0" : "#2e3036";
 
   function handleScroll(e: any) {
     const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
@@ -132,16 +131,23 @@ function AppInner({ onToggleScheme }: { onToggleScheme: () => void }) {
           )}
         </View>
 
-        {/* Dark mode toggle */}
-        <Pressable
-          style={[styles.themeToggle, { backgroundColor: toggleBg }]}
-          onPress={() => onToggleScheme()}
-          accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
-        >
-          <DBText style={[styles.themeToggleIcon, { color: toggleTextColor }]}>
-            {isDark ? "☀️" : "🌙"}
-          </DBText>
-        </Pressable>
+        {/* Light / Dark segmented toggle */}
+        <View style={[styles.segmentWrap, { backgroundColor: toggleBg }]}>
+          <Pressable
+            style={[styles.segment, !isDark && { backgroundColor: bg, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 2, elevation: 2 }]}
+            onPress={() => !isDark ? null : onToggleScheme()}
+            accessibilityLabel="Light mode"
+          >
+            <DBText style={[styles.segmentText, { color: !isDark ? tabActiveColor : tabTextColor }]}>☀</DBText>
+          </Pressable>
+          <Pressable
+            style={[styles.segment, isDark && { backgroundColor: bg, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 2, elevation: 2 }]}
+            onPress={() => isDark ? null : onToggleScheme()}
+            accessibilityLabel="Dark mode"
+          >
+            <DBText style={[styles.segmentText, { color: isDark ? tabActiveColor : tabTextColor }]}>☾</DBText>
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.content}>
@@ -222,16 +228,23 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 13,
   },
-  themeToggle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  segmentWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 8,
+    padding: 3,
+    marginRight: 8,
+    gap: 2,
+  },
+  segment: {
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 8,
   },
-  themeToggleIcon: {
-    fontSize: 16,
+  segmentText: {
+    fontSize: 14,
   },
   content: {
     flex: 1,
