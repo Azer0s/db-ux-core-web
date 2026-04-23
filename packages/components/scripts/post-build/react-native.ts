@@ -1358,12 +1358,10 @@ export default DBCustomButton;
 	/* ---- DBHeader → SafeAreaView (built-in) ---- */
 	'header/header.tsx': `import React, { forwardRef } from "react";
 import { View, StatusBar } from "react-native";
-import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
 import DBButton from "../button/button";
 import DBDrawer from "../drawer/drawer";
-import { getBoolean } from "../../utils";
 import { DBHeaderProps } from "./model";
 
 function mkStyles(c: typeof DBTheme.light) {
@@ -1372,22 +1370,23 @@ function mkStyles(c: typeof DBTheme.light) {
       flexDirection: "row" as const,
       alignItems: "center" as const,
       paddingHorizontal: 16,
-      paddingVertical: 8,
+      paddingVertical: 12,
+      minHeight: 56,
       borderBottomWidth: 1,
       borderBottomColor: c.border,
       backgroundColor: c.bg,
     },
-    brand: { marginRight: 16 },
-    navContainer: { flex: 1 },
-    actions: { flexDirection: "row" as const, alignItems: "center" as const, gap: 8 },
+    brand: { marginRight: 12, flexShrink: 0 as const },
+    navContainer: { flex: 1, overflow: "hidden" as const },
+    actions: { flexDirection: "row" as const, alignItems: "center" as const, gap: 4, flexShrink: 0 as const },
   };
 }
 
 function DBHeaderFn(props: DBHeaderProps, component: any) {
   const { isDark } = useDBFont();
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
-
   const styles = mkStyles(c);
+  const hasDrawer = props.onToggle !== undefined;
 
   function handleToggle() {
     const open = !Boolean(props.drawerOpen);
@@ -1399,23 +1398,29 @@ function DBHeaderFn(props: DBHeaderProps, component: any) {
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <View style={styles.header} ref={component}>
         {props.brand && <View style={styles.brand}>{props.brand}</View>}
-        <View style={styles.navContainer}>{props.children}</View>
+        {/* Only show inline nav when there is no drawer — avoid squishing */}
+        {!hasDrawer && <View style={styles.navContainer}>{props.children}</View>}
+        {hasDrawer && <View style={styles.navContainer} />}
         <View style={styles.actions}>
           {props.primaryAction}
           {props.secondaryAction}
-          <DBButton variant="ghost" noText icon="menu" onClick={handleToggle}>
-            {props.burgerMenuLabel ?? "Menu"}
-          </DBButton>
+          {hasDrawer && (
+            <DBButton variant="ghost" noText icon="menu" onClick={handleToggle}>
+              {props.burgerMenuLabel ?? "Menu"}
+            </DBButton>
+          )}
         </View>
       </View>
-      <DBDrawer
-        open={Boolean(props.drawerOpen)}
-        onClose={handleToggle}
-        closeButtonText={props.closeButtonText}
-      >
-        <View>{props.children}</View>
-        {props.metaNavigation && <View>{props.metaNavigation}</View>}
-      </DBDrawer>
+      {hasDrawer && (
+        <DBDrawer
+          open={Boolean(props.drawerOpen)}
+          onClose={handleToggle}
+          closeButtonText={props.closeButtonText}
+        >
+          <View>{props.children}</View>
+          {props.metaNavigation && <View>{props.metaNavigation}</View>}
+        </DBDrawer>
+      )}
     </View>
   );
 }
