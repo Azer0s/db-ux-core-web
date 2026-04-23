@@ -3333,53 +3333,55 @@ export default DBNotification;
 `,
 
   'section/section.tsx': `import React from "react";
-import { View } from "react-native";
+import { View, useWindowDimensions } from "react-native";
 import { useDBFont } from "../../providers/font-provider";
 import type { DBSectionProps } from "./model";
 
-// spacing = padding around the card group (determines how big the blue area is)
 const SPACING_PAD: Record<string, number> = {
   none: 0, small: 16, medium: 32, large: 48,
 };
 
-// density = gap between cards
 const DENSITY_GAP: Record<string, number> = {
   functional: 8, regular: 16, expressive: 24,
 };
 
-// width = flex scale for each card (small=1, medium=2, large=3, full=stretch)
-const CARD_FLEX: Record<string, number> = {
-  small: 1, medium: 2, large: 3, full: 1,
+// width = card width as fraction of screen width
+const CARD_SCALE: Record<string, number> = {
+  small: 0.2, medium: 0.35, large: 0.55,
 };
 
 function DBSection(props: DBSectionProps) {
   const { isDark } = useDBFont();
+  const { width: screenW } = useWindowDimensions();
   const sectionBg = isDark ? "#062736" : "#ebf5fe";
   const spacing: string = (props as any).spacing ?? "medium";
   const density: string = (props as any).density ?? "regular";
   const widthKey: string = (props as any).width ?? "medium";
+  const isFull = widthKey === "full";
 
   const pad = SPACING_PAD[spacing] ?? 32;
   const gap = DENSITY_GAP[density] ?? 16;
-  const cardW = CARD_FLEX[widthKey] ?? 2;
-  const isFull = widthKey === "full";
+  const cardWidth = isFull ? undefined : Math.round(screenW * (CARD_SCALE[widthKey] ?? 0.35));
 
-  // Inject flex scale into each child card
   const styledChildren = React.Children.map(props.children, (child) => {
     if (!React.isValidElement(child)) return child;
     return React.cloneElement(child as React.ReactElement<any>, {
-      style: [isFull ? { flex: 1 } : { flex: cardW }, (child.props as any).style],
+      style: [isFull ? { flex: 1 } : { width: cardWidth }, (child.props as any).style],
     });
   });
 
   return (
     <View
       style={[
-        { padding: pad, alignSelf: "flex-start", backgroundColor: sectionBg },
+        {
+          padding: pad,
+          backgroundColor: sectionBg,
+          ...(isFull ? { width: "100%" } : { alignSelf: "flex-start" }),
+        },
         (props as any).style,
       ]}
     >
-      <View style={{ flexDirection: "row", flexWrap: isFull ? "wrap" : "nowrap", gap }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap }}>
         {styledChildren}
       </View>
     </View>
