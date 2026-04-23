@@ -41,11 +41,9 @@ const LIGHT_BG = "#ffffff";
 
 const RootContainer = Platform.OS === "web" ? View : SafeAreaView;
 
-function AppInner() {
+function AppInner({ onToggleScheme }: { onToggleScheme: () => void }) {
   const [active, setActive] = useState<ScreenKey>("button");
-  const [colorScheme, setColorScheme] = useState<ColorScheme>("light");
-  const isDark = colorScheme === "dark";
-  const { fontFamily: f } = useDBFont();
+  const { isDark, fontFamily: f } = useDBFont();
 
   const ActiveScreen = SCREENS.find((s) => s.key === active)!.component;
 
@@ -92,7 +90,7 @@ function AppInner() {
         {/* Dark mode toggle */}
         <Pressable
           style={[styles.themeToggle, { backgroundColor: toggleBg }]}
-          onPress={() => setColorScheme(isDark ? "light" : "dark")}
+          onPress={() => onToggleScheme()}
           accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
         >
           <DBText style={[styles.themeToggleIcon, { color: toggleTextColor }]}>
@@ -109,6 +107,8 @@ function AppInner() {
 }
 
 export default function App() {
+  const [colorScheme, setColorScheme] = useState<ColorScheme>("light");
+
   return (
     <DBFontProvider
       fonts={{
@@ -117,9 +117,9 @@ export default function App() {
         semibold: require("./assets/fonts/DBNeoScreenSans-SemiBold.ttf"),
         bold: require("./assets/fonts/DBNeoScreenSans-Bold.ttf"),
       }}
-      colorScheme="auto"
+      colorScheme={colorScheme}
     >
-      <AppInner />
+      <AppInner onToggleScheme={() => setColorScheme((s) => (s === "dark" ? "light" : "dark"))} />
     </DBFontProvider>
   );
 }
