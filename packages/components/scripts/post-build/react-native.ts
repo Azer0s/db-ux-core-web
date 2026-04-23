@@ -3307,7 +3307,6 @@ export default DBTag;
 
   'tab-list/tab-list.tsx': `import React from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
-import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
 import type { DBTabListProps } from "./model";
@@ -3317,7 +3316,11 @@ function DBTabList(props: DBTabListProps) {
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
   return (
     <View style={[styles.container, { borderBottomColor: c.border }]}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scroll}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+      >
         {props.children}
       </ScrollView>
     </View>
@@ -3325,8 +3328,8 @@ function DBTabList(props: DBTabListProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { borderBottomWidth: StyleSheet.hairlineWidth },
-  scroll: { flexDirection: "row" },
+  container: { borderBottomWidth: StyleSheet.hairlineWidth, width: "100%" },
+  content: { flexDirection: "row", alignItems: "stretch" },
 });
 
 export default DBTabList;
