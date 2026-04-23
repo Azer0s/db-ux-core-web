@@ -1078,7 +1078,7 @@ export default DBNavigation;
 
 	/* ---- DBNavigationItem → styled pressable nav item with dropdown ---- */
 	'navigation-item/navigation-item.tsx': `import React, { useRef, useState } from "react";
-import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Dimensions, Modal, Pressable, StyleSheet, View } from "react-native";
 import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
@@ -1212,17 +1212,31 @@ function DBNavigationItem(props: DBNavigationItemProps) {
 
       {hasDropdown && (
         <Modal visible={dropdownVisible} transparent animationType="fade" onRequestClose={closeDropdown}>
-          <View style={StyleSheet.absoluteFillObject}>
-            <Pressable style={StyleSheet.absoluteFillObject} onPress={closeDropdown} />
-            <View style={[styles.panel, { top: panelTop, left: panelLeft, width: panelW, backgroundColor: c.bg, borderColor: c.border, shadowColor: "#000" }]}>
-              <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
-                <View style={{ flexDirection: "column" }}>
-                  {React.Children.map(props.subNavigation as React.ReactNode, (child, i) => (
-                    <DropdownItem key={i} child={child} depth={0} onCloseRoot={closeDropdown} c={c} borderColor={c.border} />
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
+          <Pressable
+            onPress={closeDropdown}
+            style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+          />
+          <View style={{
+            position: "absolute",
+            top: panelTop,
+            left: panelLeft,
+            width: panelW,
+            maxHeight: 400,
+            flexDirection: "column",
+            backgroundColor: c.bg,
+            borderWidth: StyleSheet.hairlineWidth,
+            borderColor: c.border,
+            borderRadius: 8,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.14,
+            shadowRadius: 12,
+            elevation: 8,
+            overflow: "hidden",
+          }}>
+            {React.Children.map(props.subNavigation as React.ReactNode, (child, i) => (
+              <DropdownItem key={i} child={child} depth={0} onCloseRoot={closeDropdown} c={c} borderColor={c.border} />
+            ))}
           </View>
         </Modal>
       )}
@@ -1234,18 +1248,6 @@ const styles = StyleSheet.create({
   item: { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 9, borderBottomWidth: 3 },
   labelRow: { flexDirection: "row", alignItems: "center" },
   chevron: { fontSize: 11 },
-  panel: {
-    position: "absolute",
-    flexDirection: "column",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 12,
-    elevation: 8,
-    maxHeight: 400,
-    overflow: "hidden",
-  },
 });
 
 export default DBNavigationItem;
