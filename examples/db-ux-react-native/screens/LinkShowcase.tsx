@@ -55,9 +55,10 @@ export default function LinkShowcase() {
 
       <DBDivider />
 
-      <Section title="With icon">
-        <DBLink showIcon>Navigate forward</DBLink>
-        <DBLink showIcon>Download PDF</DBLink>
+      <Section title="With leading icon">
+        <DBLink icon="download">Download PDF</DBLink>
+        <DBLink icon="phone">Call support</DBLink>
+        <DBLink icon="mail">Send email</DBLink>
       </Section>
     </ScrollView>
   );

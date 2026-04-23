@@ -1374,8 +1374,14 @@ import { Pressable, Text, View } from "react-native";
 import DBText from "../text/text";
 import * as Linking from "expo-linking";
 import { useDBFont } from "../../providers/font-provider";
-import { DBTheme, DBTypography } from "../../shared/tokens";
+import { DBTheme, DBTypography, DBColors } from "../../shared/tokens";
 import { DBLinkProps } from "./model";
+
+function MIIcon({ name, size, color, style }: { name: string; size: number; color: string; style?: any }) {
+  const _mi = require("@expo/vector-icons/MaterialIcons");
+  const MaterialIcons = _mi.default ?? _mi;
+  return <MaterialIcons name={name} size={size} color={color} style={style} accessibilityElementsHidden />;
+}
 
 function DBLinkFn(props: DBLinkProps, component: any) {
   const { isDark } = useDBFont();
@@ -1384,17 +1390,19 @@ function DBLinkFn(props: DBLinkProps, component: any) {
   const variant = (props as any).variant ?? "adaptive";
   const size = (props as any).size ?? "medium";
   const content = (props as any).content;
+  // leadingIcon: shown before the label (e.g. "download", "phone")
+  const leadingIcon = (props as any).icon as string | undefined;
   const isInline = variant === "inline";
   const isSmall = size === "small";
   const isDisabled = Boolean(props.disabled);
 
-  const linkColor = variant === "brand"
-    ? (isDark ? "#a6a5e7" : "#514ec7")
-    : c.text;
+  // adaptive/inline = informational blue; brand = DB red
+  const adaptiveColor = isDark ? DBColors.informational.light : DBColors.informational.origin;
+  const linkColor = variant === "brand" ? c.brandText : adaptiveColor;
+  const activeColor = isDisabled ? c.textDisabled : linkColor;
 
-  const arrow = !isInline && content === "external" ? " ↗"
-    : !isInline ? " →"
-    : "";
+  // trailing navigation arrow — always present on block links
+  const trailingIconName = content === "external" ? "open_in_new" : "arrow_forward";
 
   async function handlePress() {
     if (props.href) {
@@ -1404,21 +1412,23 @@ function DBLinkFn(props: DBLinkProps, component: any) {
     if (props.onClick) (props.onClick as any)();
   }
 
-  // Inline variant: render as Text so it sits naturally inside a parent Text
+  // Inline variant: bare Text so it sits naturally inside a parent Text
   if (isInline) {
     return (
       <Text
         onPress={isDisabled ? undefined : handlePress}
         accessibilityRole="link"
-        style={{ color: isDisabled ? c.textDisabled : linkColor, textDecorationLine: isDisabled ? "none" : "underline" }}
+        style={{ color: activeColor, textDecorationLine: isDisabled ? "none" : "underline" }}
       >
         {props.text ?? props.children}
       </Text>
     );
   }
 
-  // Block variant: Pressable row with DBText + arrow
+  // Block variant: [leading icon?] Label [trailing arrow]
   const fontSize = isSmall ? DBTypography.sizeSM : DBTypography.sizeMD;
+  const iconSize = isSmall ? 14 : 16;
+
   return (
     <Pressable
       ref={component}
@@ -1426,14 +1436,18 @@ function DBLinkFn(props: DBLinkProps, component: any) {
       disabled={isDisabled}
       accessibilityRole="link"
       accessibilityLabel={props.text ?? String(props.children ?? "")}
-      style={({ pressed }) => [{ flexDirection: "row", alignItems: "center" }, pressed && { opacity: 0.7 }]}
+      style={({ pressed }) => [{ flexDirection: "row", alignItems: "center", gap: 4 }, pressed && { opacity: 0.7 }]}
     >
+      {leadingIcon && (
+        <MIIcon name={leadingIcon} size={iconSize} color={activeColor} />
+      )}
       <DBText style={[
-        { color: isDisabled ? c.textDisabled : linkColor, textDecorationLine: "underline", fontSize },
+        { color: activeColor, textDecorationLine: "underline", fontSize },
         isDisabled && { textDecorationLine: "none" },
       ]}>
-        {props.text ?? props.children}{arrow}
+        {props.text ?? props.children}
       </DBText>
+      <MIIcon name={trailingIconName} size={iconSize} color={activeColor} style={{ marginLeft: -2 }} />
     </Pressable>
   );
 }
@@ -2034,7 +2048,7 @@ function mkStyles(c: typeof DBTheme.light) {
       paddingHorizontal: 16,
     },
     headerPressed: { backgroundColor: c.bgSurface },
-    title: { fontSize: 15, fontWeight: "500" as const, flex: 1, color: c.text },
+    title: { fontSize: 16, fontWeight: "600" as const, flex: 1, color: c.text },
     chevron: { fontSize: 12, color: c.textMuted },
     body: { overflow: "hidden" as const },
     bodyInner: { paddingHorizontal: 16, paddingBottom: 14 },
