@@ -1137,7 +1137,7 @@ function DropdownItem({ child, depth, onCloseRoot, c, borderColor }: DropdownIte
         )}
       </Pressable>
       {hasSubNav && subOpen && (
-        <View style={{ borderLeftWidth: 2, borderLeftColor: c.brandPrimary, marginLeft: indent + 4 }}>
+        <View style={{ flexDirection: "column", borderLeftWidth: 2, borderLeftColor: c.brandPrimary, marginLeft: indent + 4 }}>
           {React.Children.map(p.subNavigation, (sub: React.ReactNode, j: number) => (
             <DropdownItem key={j} child={sub} depth={depth + 1} onCloseRoot={onCloseRoot} c={c} borderColor={borderColor} />
           ))}
@@ -1212,17 +1212,17 @@ function DBNavigationItem(props: DBNavigationItemProps) {
 
       {hasDropdown && (
         <Modal visible={dropdownVisible} transparent animationType="fade" onRequestClose={closeDropdown}>
-          <Pressable style={StyleSheet.absoluteFillObject} onPress={closeDropdown} />
-          <View style={[styles.panel, { top: panelTop, left: panelLeft, width: panelW, backgroundColor: c.bg, borderColor: c.border, shadowColor: "#000" }]}>
-            <ScrollView
-              bounces={false}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ flexDirection: "column" }}
-            >
-              {React.Children.map(props.subNavigation as React.ReactNode, (child, i) => (
-                <DropdownItem key={i} child={child} depth={0} onCloseRoot={closeDropdown} c={c} borderColor={c.border} />
-              ))}
-            </ScrollView>
+          <View style={StyleSheet.absoluteFillObject}>
+            <Pressable style={StyleSheet.absoluteFillObject} onPress={closeDropdown} />
+            <View style={[styles.panel, { top: panelTop, left: panelLeft, width: panelW, backgroundColor: c.bg, borderColor: c.border, shadowColor: "#000" }]}>
+              <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
+                <View style={{ flexDirection: "column" }}>
+                  {React.Children.map(props.subNavigation as React.ReactNode, (child, i) => (
+                    <DropdownItem key={i} child={child} depth={0} onCloseRoot={closeDropdown} c={c} borderColor={c.border} />
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
           </View>
         </Modal>
       )}
@@ -1682,33 +1682,15 @@ import { DBTooltipProps } from "./model";
 
 type Placement = "top" | "bottom" | "left" | "right";
 
-function mkStyles(c: typeof DBTheme.light) {
-  return StyleSheet.create({
-    container: { alignSelf: "flex-start" },
-    backdrop: { flex: 1 },
-    tooltip: {
-      position: "absolute",
-      backgroundColor: c.text,
-      borderRadius: 6,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      maxWidth: 220,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 6,
-      elevation: 8,
-    },
-    tooltipText: { color: c.bg, fontSize: 13, lineHeight: 18 },
-  });
-}
+const TIP_W = 220;
+const TIP_H = 72; // generous estimate
 
 function extractText(node: any): string {
   if (typeof node === "string") return node;
   if (typeof node === "number") return String(node);
   if (!node) return "";
-  if (Array.isArray(node)) return node.map(extractText).join("");
-  if (node.props?.children) return extractText(node.props.children);
+  if (Array.isArray(node)) return node.map(extractText).join(" ").trim();
+  if (node.props?.children !== undefined) return extractText(node.props.children);
   return "";
 }
 
@@ -1721,11 +1703,16 @@ function DBTooltipFn(props: DBTooltipProps, component: any) {
 
   const childArray = React.Children.toArray(props.children);
   const trigger = childArray[0];
-  // Accept either tooltipText prop or second child (extract its text content)
-  const rawContent = (props as any).tooltipText
-    ?? (childArray[1] ? extractText(childArray[1]) : "");
+
+  // Resolve tooltip content: explicit prop wins, then second child text extraction
+  const rawContent: string =
+    (props as any).tooltipText ??
+    (props as any).content ??
+    (props as any).text ??
+    (childArray[1] ? extractText(childArray[1]) : "");
 
   function handlePress() {
+    if (!rawContent) return;
     if (triggerRef.current) {
       (triggerRef.current as any).measureInWindow(
         (x: number, y: number, w: number, h: number) => {
@@ -1739,40 +1726,58 @@ function DBTooltipFn(props: DBTooltipProps, component: any) {
   }
 
   const placement: Placement = ((props as any).placement ?? "bottom") as Placement;
-  const { width: winW, height: winH } = Dimensions.get("window");
-  const GAP = 6;
-  const TIP_W = 220;
-  const TIP_H = 60; // approximate
+  const { width: winW } = Dimensions.get("window");
+  const GAP = 8;
 
   function positionStyle() {
     const { x, y, w, h } = pos;
     const cx = x + w / 2;
     const left = Math.max(8, Math.min(cx - TIP_W / 2, winW - TIP_W - 8));
     switch (placement) {
-      case "top":   return { bottom: winH - y + GAP, left };
-      case "left":  return { top: Math.max(8, y), right: winW - x + GAP };
-      case "right": return { top: Math.max(8, y), left: x + w + GAP };
-      default:      return { top: y + h + GAP, left };
+      case "top":
+        return { top: Math.max(8, y - TIP_H - GAP), left };
+      case "left":
+        return { top: Math.max(8, y + h / 2 - TIP_H / 2), right: winW - x + GAP, maxWidth: TIP_W };
+      case "right":
+        return { top: Math.max(8, y + h / 2 - TIP_H / 2), left: x + w + GAP, maxWidth: TIP_W };
+      default: // bottom
+        return { top: y + h + GAP, left };
     }
   }
-
-  const styles = mkStyles(c);
 
   return (
     <View style={styles.container} ref={component}>
       <Pressable ref={triggerRef} onPress={handlePress}>
         {trigger}
       </Pressable>
-      <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setVisible(false)}>
-          <View style={[styles.tooltip, positionStyle()]} pointerEvents="none">
-            <DBText style={styles.tooltipText}>{rawContent}</DBText>
-          </View>
-        </Pressable>
-      </Modal>
+      {rawContent ? (
+        <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
+          <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setVisible(false)}>
+            <View style={[styles.tooltip, { backgroundColor: c.text, shadowColor: "#000" }, positionStyle()]} pointerEvents="none">
+              <DBText style={[styles.tooltipText, { color: c.bg }]}>{rawContent}</DBText>
+            </View>
+          </Pressable>
+        </Modal>
+      ) : null}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { alignSelf: "flex-start" },
+  tooltip: {
+    position: "absolute",
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    maxWidth: TIP_W,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  tooltipText: { fontSize: 13, lineHeight: 18 },
+});
 
 const DBTooltip = forwardRef<View, DBTooltipProps>(DBTooltipFn);
 export default DBTooltip;
