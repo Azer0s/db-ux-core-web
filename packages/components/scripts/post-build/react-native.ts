@@ -1101,6 +1101,14 @@ type DropdownItemProps = {
   borderColor: string;
 };
 
+function flattenChildren(node: React.ReactNode): React.ReactElement[] {
+  if (!node) return [];
+  if (Array.isArray(node)) return node.flatMap(flattenChildren);
+  if (!React.isValidElement(node)) return [];
+  if ((node as any).type === React.Fragment) return flattenChildren((node.props as any).children);
+  return [node as React.ReactElement];
+}
+
 function DropdownItem({ child, depth, onCloseRoot, c, borderColor }: DropdownItemProps) {
   const [subOpen, setSubOpen] = useState(false);
   if (!React.isValidElement(child)) return null;
@@ -1138,7 +1146,7 @@ function DropdownItem({ child, depth, onCloseRoot, c, borderColor }: DropdownIte
       </Pressable>
       {hasSubNav && subOpen && (
         <View style={{ flexDirection: "column", borderLeftWidth: 2, borderLeftColor: c.brandPrimary, marginLeft: indent + 4 }}>
-          {React.Children.map(p.subNavigation, (sub: React.ReactNode, j: number) => (
+          {flattenChildren(p.subNavigation).map((sub, j) => (
             <DropdownItem key={j} child={sub} depth={depth + 1} onCloseRoot={onCloseRoot} c={c} borderColor={borderColor} />
           ))}
         </View>
@@ -1234,7 +1242,7 @@ function DBNavigationItem(props: DBNavigationItemProps) {
             elevation: 8,
             overflow: "hidden",
           }}>
-            {React.Children.map(props.subNavigation as React.ReactNode, (child, i) => (
+            {flattenChildren(props.subNavigation).map((child, i) => (
               <DropdownItem key={i} child={child} depth={0} onCloseRoot={closeDropdown} c={c} borderColor={c.border} />
             ))}
           </View>
