@@ -31,6 +31,8 @@ const PINNED_MODULES = {
   "expo-font": require.resolve("expo-font", { paths: [projectRoot] }),
   "expo-linking": require.resolve("expo-linking", { paths: [projectRoot] }),
   "@expo/vector-icons": require.resolve("@expo/vector-icons", { paths: [projectRoot] }),
+  "react-native-svg": require.resolve("react-native-svg", { paths: [projectRoot] }),
+  "react-native-safe-area-context": require.resolve("react-native-safe-area-context", { paths: [projectRoot] }),
   // expo-asset is nested inside expo/node_modules, not hoisted. Without this pin,
   // expo-font falls through to the workspace root's expo-asset (old SDK), which pulls in
   // workspace root's expo-modules-core and react-native 0.81.5 — causing the

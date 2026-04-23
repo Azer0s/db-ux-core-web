@@ -57,7 +57,7 @@ export default function AccordionShowcase() {
             open={openIndex === i}
             onToggle={() => setOpenIndex(openIndex === i ? null : i)}
           >
-            <DBText variant="body" style={{ color: c.body }}>{item.text}</DBText>
+            <DBText variant="body" style={{ color: c.body }}>{item.content}</DBText>
           </DBAccordionItem>
         ))}
       </Section>

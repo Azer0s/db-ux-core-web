@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Platform, Pressable, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { DBFontProvider, DBText, useDBFont } from "@db-ux/react-native-core-components";
 import BadgeShowcase from "./screens/BadgeShowcase";
 import ButtonShowcase from "./screens/ButtonShowcase";
@@ -118,17 +119,19 @@ export default function App() {
   const [colorScheme, setColorScheme] = useState<ColorScheme>("light");
 
   return (
-    <DBFontProvider
-      fonts={{
-        regular: require("./assets/fonts/DBNeoScreenSans-Regular.ttf"),
-        medium: require("./assets/fonts/DBNeoScreenSans-Medium.ttf"),
-        semibold: require("./assets/fonts/DBNeoScreenSans-SemiBold.ttf"),
-        bold: require("./assets/fonts/DBNeoScreenSans-Bold.ttf"),
-      }}
-      colorScheme={colorScheme}
-    >
-      <AppInner onToggleScheme={() => setColorScheme((s) => (s === "dark" ? "light" : "dark"))} />
-    </DBFontProvider>
+    <SafeAreaProvider>
+      <DBFontProvider
+        fonts={{
+          regular: require("./assets/fonts/DBNeoScreenSans-Regular.ttf"),
+          medium: require("./assets/fonts/DBNeoScreenSans-Medium.ttf"),
+          semibold: require("./assets/fonts/DBNeoScreenSans-SemiBold.ttf"),
+          bold: require("./assets/fonts/DBNeoScreenSans-Bold.ttf"),
+        }}
+        colorScheme={colorScheme}
+      >
+        <AppInner onToggleScheme={() => setColorScheme((s) => (s === "dark" ? "light" : "dark"))} />
+      </DBFontProvider>
+    </SafeAreaProvider>
   );
 }
 
