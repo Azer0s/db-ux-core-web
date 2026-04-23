@@ -22,9 +22,9 @@ export default function LinkShowcase() {
     <ScrollView contentContainerStyle={styles.container}>
       <DBText style={[styles.heading, { color: c.heading }]}>DBLink</DBText>
       <Section title="Variants">
-        <DBLink variant="adaptive">Adaptive link (follows brand color)</DBLink>
-        <DBLink variant="brand">Brand link (always red)</DBLink>
-        <DBLink variant="inline">Inline link (no arrow, blends with text)</DBLink>
+        <DBLink variant="adaptive">Adaptive link (text color, underlined)</DBLink>
+        <DBLink variant="brand">Brand link (DB red)</DBLink>
+        <DBLink variant="inline">Inline link (no arrow)</DBLink>
       </Section>
 
       <DBDivider />

@@ -1374,13 +1374,15 @@ import { Pressable, Text, View } from "react-native";
 import DBText from "../text/text";
 import * as Linking from "expo-linking";
 import { useDBFont } from "../../providers/font-provider";
-import { DBTheme, DBTypography, DBColors } from "../../shared/tokens";
+import { DBTheme, DBTypography } from "../../shared/tokens";
 import { DBLinkProps } from "./model";
 
 function MIIcon({ name, size, color, style }: { name: string; size: number; color: string; style?: any }) {
   const _mi = require("@expo/vector-icons/MaterialIcons");
   const MaterialIcons = _mi.default ?? _mi;
-  return <MaterialIcons name={name} size={size} color={color} style={style} accessibilityElementsHidden />;
+  // @expo/vector-icons MaterialIcons uses hyphenated names (e.g. arrow-forward, open-in-new)
+  const normalizedName = name.replace(/_/g, "-");
+  return <MaterialIcons name={normalizedName} size={size} color={color} style={style} accessibilityElementsHidden />;
 }
 
 function DBLinkFn(props: DBLinkProps, component: any) {
@@ -1396,9 +1398,8 @@ function DBLinkFn(props: DBLinkProps, component: any) {
   const isSmall = size === "small";
   const isDisabled = Boolean(props.disabled);
 
-  // adaptive/inline = informational blue; brand = DB red
-  const adaptiveColor = isDark ? DBColors.informational.light : DBColors.informational.origin;
-  const linkColor = variant === "brand" ? c.brandText : adaptiveColor;
+  // brand = DB red; adaptive/inline = text color with underline (web spec: adaptive-on-bg = neutral text)
+  const linkColor = variant === "brand" ? c.brandText : c.text;
   const activeColor = isDisabled ? c.textDisabled : linkColor;
 
   // trailing navigation arrow — always present on block links
