@@ -12,7 +12,7 @@ type Spacing = "none" | "small" | "medium" | "large";
 type Density = "functional" | "regular" | "expressive";
 type Width = "small" | "medium" | "large" | "full";
 
-function SimpleCard({ label }: { label: string }) {
+function DBSectionCard({ label }: { label: string }) {
   const c = useScreenColors();
   return <DBCard elevationLevel={2}><DBText style={{ color: c.heading, fontWeight: "600" }}>{label}</DBText></DBCard>;
 }
@@ -23,9 +23,10 @@ function Demo({ label, density, spacing, width }: { label: string; density?: Den
     <View style={styles.demo}>
       <DBText style={[styles.demoLabel, { color: c.muted }]}>{label}</DBText>
       <DBSection density={density} spacing={spacing} width={width}>
-        <SimpleCard label="A" />
-        <SimpleCard label="B" />
-        <SimpleCard label="C" />
+        <DBSectionCard label="A" />
+        <DBSectionCard label="B" />
+        <DBSectionCard label="C" />
+        <DBSectionCard label="D" />
       </DBSection>
     </View>
   );
@@ -37,10 +38,11 @@ export default function StructureShowcase() {
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: c.bg }]}>
       <DBText style={[styles.heading, { color: c.heading }]}>DBSection</DBText>
 
-      <DBText style={[styles.group, { color: c.heading }]}>width (each card's width)</DBText>
-      <Demo label="small (80px)" width="small" spacing="medium" density="regular" />
-      <Demo label="medium (120px)" width="medium" spacing="medium" density="regular" />
-      <Demo label="large (180px)" width="large" spacing="medium" density="regular" />
+      <DBText style={[styles.group, { color: c.heading }]}>width (section width)</DBText>
+      <Demo label="small" width="small" spacing="medium" density="regular" />
+      <Demo label="medium" width="medium" spacing="medium" density="regular" />
+      <Demo label="large" width="large" spacing="medium" density="regular" />
+      <Demo label="full (default)" spacing="medium" density="regular" />
 
       <DBDivider style={{ marginVertical: 20 }} />
 
@@ -63,20 +65,24 @@ export default function StructureShowcase() {
       <DBText style={[styles.demoLabel, { color: c.muted, paddingHorizontal: 0, marginBottom: 4 }]}>Side by side</DBText>
       <View style={{ flexDirection: "row", gap: 12, paddingHorizontal: 20 }}>
         <DBSection width="small" spacing="small" density="regular">
-          <SimpleCard label="A" /><SimpleCard label="B" />
+          <DBSectionCard label="A" /><DBSectionCard label="B" />
+          <DBSectionCard label="C" /><DBSectionCard label="D" />
         </DBSection>
         <DBSection width="small" spacing="small" density="regular">
-          <SimpleCard label="C" /><SimpleCard label="D" />
+          <DBSectionCard label="E" /><DBSectionCard label="F" />
+          <DBSectionCard label="G" /><DBSectionCard label="H" />
         </DBSection>
       </View>
 
       <DBText style={[styles.demoLabel, { color: c.muted, paddingHorizontal: 0, marginTop: 12, marginBottom: 4 }]}>Stacked</DBText>
       <View style={{ gap: 8, paddingHorizontal: 20 }}>
         <DBSection width="medium" spacing="small" density="regular">
-          <SimpleCard label="A" /><SimpleCard label="B" />
+          <DBSectionCard label="A" /><DBSectionCard label="B" />
+          <DBSectionCard label="C" /><DBSectionCard label="D" />
         </DBSection>
         <DBSection width="medium" spacing="small" density="functional">
-          <SimpleCard label="C" /><SimpleCard label="D" />
+          <DBSectionCard label="E" /><DBSectionCard label="F" />
+          <DBSectionCard label="G" /><DBSectionCard label="H" />
         </DBSection>
       </View>
 

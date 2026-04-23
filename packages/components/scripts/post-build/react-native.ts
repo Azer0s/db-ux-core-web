@@ -3155,12 +3155,12 @@ function DBCard(props: DBCardProps) {
     "2": {
       bg: c.bg,
       borderWidth: 0,    borderColor: "transparent" as const,
-      shadowOpacity: isDark ? 0.06 : 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: isDark ? 3 : 6,
+      shadowOpacity: isDark ? 0.03 : 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: isDark ? 3 : 6,
     },
     "3": {
       bg: c.bg,
       borderWidth: 0,    borderColor: "transparent" as const,
-      shadowOpacity: isDark ? 0.12 : 0.30, shadowRadius: 28, shadowOffset: { width: 0, height: 12 }, elevation: isDark ? 6 : 12,
+      shadowOpacity: isDark ? 0.06 : 0.14, shadowRadius: 28, shadowOffset: { width: 0, height: 12 }, elevation: isDark ? 6 : 12,
     },
   };
   const e = elevationMap[level] ?? elevationMap["1"];
@@ -3290,7 +3290,7 @@ function DBNotification(props: DBNotificationProps) {
           borderLeftColor: palette.border,
           shadowColor: c.shadowColor,
           shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: isDark ? 0.04 : 0.1,
+          shadowOpacity: isDark ? 0.02 : 0.05,
           shadowRadius: 3,
           elevation: 2,
         },
@@ -3353,9 +3353,9 @@ const DENSITY_GAP: Record<string, number> = {
   functional: 8, regular: 16, expressive: 24,
 };
 
-// fraction of screenWidth per card
-const CARD_SCALE: Record<string, number> = {
-  small: 0.18, medium: 0.26, large: 0.40,
+// fraction of screenWidth for the section itself
+const SECTION_SCALE: Record<string, number> = {
+  small: 0.45, medium: 0.65, large: 0.85,
 };
 
 function DBSection(props: DBSectionProps) {
@@ -3369,28 +3369,21 @@ function DBSection(props: DBSectionProps) {
 
   const pad = SPACING_PAD[spacing] ?? 0;
   const gap = DENSITY_GAP[density] ?? 16;
-  const cardWidth = isFull ? undefined : Math.round(screenW * (CARD_SCALE[widthKey] ?? 0.26));
 
-  // Compute the section's exact width from its content so it never stretches full-width
-  const childCount = React.Children.count(props.children);
-  const rowW = cardWidth != null
-    ? childCount * cardWidth + Math.max(0, childCount - 1) * gap
-    : undefined;
-  const sectionW: number | "100%" | undefined = isFull
+  // Section width
+  const sectionW: number | "100%" = isFull
     ? "100%"
-    : rowW != null
-      ? Math.min(rowW + 2 * pad, screenW)
-      : undefined;
+    : Math.round(screenW * (SECTION_SCALE[widthKey] ?? 0.65));
+
+  // Always exactly 2 cards per row
+  const innerW = typeof sectionW === "number" ? sectionW : screenW;
+  const cardWidth = Math.floor((innerW - 2 * pad - gap) / 2);
 
   return (
     <DBSectionContext.Provider value={{ cardWidth, isFull }}>
       <View
         style={[
-          {
-            padding: pad,
-            backgroundColor: sectionBg,
-            ...(sectionW != null ? { width: sectionW } : { alignSelf: "flex-start" }),
-          },
+          { padding: pad, backgroundColor: sectionBg, width: sectionW },
           (props as any).style,
         ]}
       >
