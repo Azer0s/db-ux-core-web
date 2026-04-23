@@ -21,19 +21,19 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 const FAQ = [
   {
     headlinePlain: "What is the DB UX Design System?",
-    text: "DB UX is Deutsche Bahn's design system for building consistent, accessible digital products across web and mobile platforms.",
+    content: "DB UX is Deutsche Bahn's design system for building consistent, accessible digital products across web and mobile platforms.",
   },
   {
     headlinePlain: "Is React Native supported?",
-    text: "Yes — this showcase demonstrates the React Native port of the core component library, generated from the same Mitosis source as the web components.",
+    content: "Yes — this showcase demonstrates the React Native port of the core component library, generated from the same Mitosis source as the web components.",
   },
   {
     headlinePlain: "Where can I find the source code?",
-    text: "The generator lives in packages/components/scripts/post-build/react-native.ts inside the core-web monorepo.",
+    content: "The generator lives in packages/components/scripts/post-build/react-native.ts inside the core-web monorepo.",
   },
   {
     headlinePlain: "Can I use custom fonts?",
-    text: "Yes. Pass font require() paths to DBFontProvider and it loads them via expo-font, injecting the correct fontFamily into every component automatically.",
+    content: "Yes. Pass font require() paths to DBFontProvider and it loads them via expo-font, injecting the correct fontFamily into every component automatically.",
   },
 ];
 

@@ -20,7 +20,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 const ICON_GROUPS: { label: string; icons: string[] }[] = [
   {
     label: "Navigation",
-    icons: ["home", "search", "menu", "close", "arrow_forward", "arrow_back", "arrow_upward", "arrow_downward"],
+    icons: ["home", "search", "menu", "close", "arrow-forward", "arrow-back", "arrow-upward", "arrow-downward"],
   },
   {
     label: "Actions",
@@ -28,15 +28,15 @@ const ICON_GROUPS: { label: string; icons: string[] }[] = [
   },
   {
     label: "Status",
-    icons: ["check_circle", "error", "warning", "info", "help", "notifications", "lock", "lock_open"],
+    icons: ["check-circle", "error", "warning", "info", "help", "notifications", "lock", "lock-open"],
   },
   {
     label: "Transport",
-    icons: ["train", "directions_bus", "directions_walk", "directions_bike", "flight", "directions_car", "subway", "tram"],
+    icons: ["train", "directions-bus", "directions-walk", "directions-bike", "flight", "directions-car", "subway", "tram"],
   },
   {
     label: "Content",
-    icons: ["favorite", "star", "bookmark", "thumb_up", "person", "group", "location_on", "calendar_today"],
+    icons: ["favorite", "star", "bookmark", "thumb-up", "person", "group", "location-on", "calendar-today"],
   },
 ];
 

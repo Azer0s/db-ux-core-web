@@ -992,7 +992,8 @@ export default DBText;
 
 	/* ---- DBPage → SafeAreaView (built-in react-native) + StatusBar ---- */
 	'page/page.tsx': `import React, { forwardRef } from "react";
-import { View, SafeAreaView, StatusBar, StyleSheet } from "react-native";
+import { View, StatusBar, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
@@ -1154,7 +1155,8 @@ function DBIconFn(props: DBIconProps, component: any) {
     "16": 16, "20": 20, "24": 24, "32": 32, "48": 48, "64": 64
   };
   const size = props.weight ? (sizeMap[props.weight] ?? 24) : 24;
-  const iconName = props.icon as string | undefined;
+  // DB UX uses underscore names (e.g. "arrow_forward"); MaterialIcons needs hyphens
+  const iconName = (props.icon as string | undefined)?.replace(/_/g, '-');
 
   if (!iconName) {
     return props.text ? (
@@ -1355,7 +1357,8 @@ export default DBCustomButton;
 
 	/* ---- DBHeader → SafeAreaView (built-in) ---- */
 	'header/header.tsx': `import React, { forwardRef } from "react";
-import { View, SafeAreaView, StatusBar } from "react-native";
+import { View, StatusBar } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
@@ -1592,9 +1595,10 @@ function DBTooltipFn(props: DBTooltipProps, component: any) {
 
   function handlePress() {
     if (triggerRef.current) {
-      (triggerRef.current as any).measure(
-        (_: number, __: number, w: number, h: number, px: number, py: number) => {
-          setPos({ x: px, y: py, w, h });
+      // measureInWindow gives screen-relative coords reliably on both native and web
+      (triggerRef.current as any).measureInWindow(
+        (x: number, y: number, w: number, h: number) => {
+          setPos({ x, y, w, h });
           setVisible(true);
         }
       );
@@ -1629,7 +1633,6 @@ function DBTooltipFn(props: DBTooltipProps, component: any) {
         transparent
         animationType="fade"
         onRequestClose={() => setVisible(false)}
-        statusBarTranslucent
       >
         <Pressable style={styles.backdrop} onPress={() => setVisible(false)}>
           <View style={[styles.tooltip, positionStyle()]} pointerEvents="none">
@@ -2800,40 +2803,95 @@ export default DBNotification;
 `,
 
   'section/section.tsx': `import React from "react";
-import { View, StyleSheet } from "react-native";
-import DBText from "../text/text";
+import { View } from "react-native";
+import { DBSpacing } from "../../shared/tokens";
 import type { DBSectionProps } from "./model";
 
+const SPACING_MAP: Record<string, number> = {
+  none:   0,
+  small:  DBSpacing.sm,
+  medium: DBSpacing.lg,
+  large:  DBSpacing.xl,
+};
+
+const WIDTH_MAP: Record<string, number | string> = {
+  full:   "100%",
+  small:  640,
+  medium: 960,
+  large:  1280,
+};
+
 function DBSection(props: DBSectionProps) {
-  return <View style={styles.section}>{props.children}</View>;
-}
+  const blockPad = SPACING_MAP[(props as any).spacing ?? "medium"] ?? DBSpacing.lg;
+  const maxWidth = WIDTH_MAP[(props as any).width as string] ?? "100%";
 
-const styles = StyleSheet.create({
-  section: { paddingVertical: 8 },
-});
-
-export default DBSection;
-`,
-
-  'stack/stack.tsx': `import React from "react";
-import { View, StyleSheet } from "react-native";
-import DBText from "../text/text";
-import type { DBStackProps } from "./model";
-
-function DBStack(props: DBStackProps) {
-  const isHorizontal = props.direction === "row";
   return (
-    <View style={[styles.stack, isHorizontal ? styles.row : styles.column]}>
+    <View
+      style={{
+        paddingVertical: blockPad,
+        paddingHorizontal: DBSpacing.lg,
+        maxWidth: maxWidth as any,
+        width: "100%",
+        alignSelf: "center",
+      }}
+    >
       {props.children}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  stack: { flexWrap: "wrap" },
-  row: { flexDirection: "row", alignItems: "center" },
-  column: { flexDirection: "column" },
-});
+export default DBSection;
+`,
+
+  'stack/stack.tsx': `import React from "react";
+import { View } from "react-native";
+import { DBSpacing } from "../../shared/tokens";
+import type { DBStackProps } from "./model";
+
+const GAP_MAP: Record<string, number> = {
+  none:   0,
+  xs:     DBSpacing.xs,
+  sm:     DBSpacing.sm,
+  md:     DBSpacing.md,
+  lg:     DBSpacing.lg,
+  xl:     DBSpacing.xl,
+};
+
+const ALIGN_MAP: Record<string, "flex-start" | "flex-end" | "center" | "stretch"> = {
+  start:   "flex-start",
+  end:     "flex-end",
+  center:  "center",
+  stretch: "stretch",
+};
+
+const JUSTIFY_MAP: Record<string, "flex-start" | "flex-end" | "center" | "space-between"> = {
+  start:          "flex-start",
+  end:            "flex-end",
+  center:         "center",
+  "space-between": "space-between",
+};
+
+function DBStack(props: DBStackProps) {
+  const isRow = props.direction === "row";
+  const gap = GAP_MAP[(props as any).gap ?? "md"] ?? DBSpacing.md;
+  const alignItems = ALIGN_MAP[props.alignment ?? (isRow ? "center" : "stretch")] ?? (isRow ? "center" : "stretch");
+  const justifyContent = JUSTIFY_MAP[props.justifyContent ?? "start"] ?? "flex-start";
+  const flexWrap = props.wrap ? "wrap" : "nowrap";
+
+  return (
+    <View
+      style={{
+        flexDirection: isRow ? "row" : "column",
+        flexWrap,
+        gap,
+        alignItems,
+        justifyContent,
+      }}
+    >
+      {props.children}
+    </View>
+  );
+}
 
 export default DBStack;
 `,

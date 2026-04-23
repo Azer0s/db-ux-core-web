@@ -27,6 +27,7 @@
     "expo": ">=51.0.0",
     "react": ">=18.0.0",
     "react-native": ">=0.72.0",
+    "react-native-safe-area-context": ">=4.0.0",
     "react-native-svg": ">=13.0.0"
   },
   "dependencies": {
@@ -42,6 +43,7 @@
     "expo": "~54.0.33",
     "react": "19.1.0",
     "react-native": "0.81.5",
+    "react-native-safe-area-context": "^4.0.0",
     "react-native-svg": "^15.0.0"
   },
   "publishConfig": {
