@@ -48,8 +48,8 @@ const SCREENS = [
 type ScreenKey = (typeof SCREENS)[number]["key"];
 type ColorScheme = "light" | "dark";
 
-const DARK_BG = "#062736";
-const LIGHT_BG = "#ebf5fe";
+const DARK_BG = "#16181b";
+const LIGHT_BG = "#ffffff";
 
 const RootContainer = Platform.OS === "web" ? View : SafeAreaView;
 

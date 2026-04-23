@@ -736,7 +736,7 @@ export const DBColorPaletteDark = {
  */
 export const DBTheme = {
   light: {
-    bg:           '#ebf5fe',  // page background (light)
+    bg:           '#ffffff',  // neutral[14] — page background
     bgSurface:    '#f3f3f5',  // neutral[13] — card / surface
     bgElevated:   '#edeef0',  // neutral[12] — elevated surface
     text:         '#2e3036',  // neutral[3]  — primary text
@@ -752,7 +752,7 @@ export const DBTheme = {
     shadowColor:  '#000000',
   },
   dark: {
-    bg:           '#062736',  // page background (dark)
+    bg:           '#16181b',  // neutral[1]  — page background
     bgSurface:    '#222428',  // neutral[2]  — card / surface
     bgElevated:   '#2e3036',  // neutral[3]  — elevated surface
     text:         '#edeef0',  // neutral[12] — primary text
@@ -1374,21 +1374,31 @@ import { Pressable, View } from "react-native";
 import DBText from "../text/text";
 import * as Linking from "expo-linking";
 import { useDBFont } from "../../providers/font-provider";
-import { DBTheme, DBColors } from "../../shared/tokens";
+import { DBTheme, DBTypography } from "../../shared/tokens";
 import { DBLinkProps } from "./model";
-
-function mkStyles(c: typeof DBTheme.light) {
-  return {
-    link: { color: DBColors.informational.origin, textDecorationLine: "underline" as const },
-    disabled: { color: c.textDisabled, textDecorationLine: "none" as const },
-  };
-}
 
 function DBLinkFn(props: DBLinkProps, component: any) {
   const { isDark } = useDBFont();
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
 
-  const styles = mkStyles(c);
+  const variant = (props as any).variant ?? "adaptive";
+  const size = (props as any).size ?? "medium";
+  const content = (props as any).content; // "internal" | "external" | undefined
+  const isInline = variant === "inline";
+  const isSmall = size === "small";
+
+  // Colour: brand variant uses purple, adaptive/inline uses brand red
+  const linkColor = variant === "brand"
+    ? (isDark ? "#a6a5e7" : "#514ec7")
+    : c.brandText;
+
+  // Arrow icon appended after text (unless inline)
+  const arrow = !isInline && content === "external" ? " ↗"
+    : !isInline && content === "internal" ? " →"
+    : !isInline ? " →"   // adaptive default also shows arrow
+    : "";
+
+  const fontSize = isSmall ? DBTypography.sizeSM : DBTypography.sizeMD;
 
   async function handlePress() {
     if (props.href) {
@@ -1407,8 +1417,11 @@ function DBLinkFn(props: DBLinkProps, component: any) {
       accessibilityLabel={props.text ?? String(props.children ?? "")}
       style={({ pressed }) => [pressed && { opacity: 0.7 }]}
     >
-      <DBText style={[styles.link, Boolean(props.disabled) && styles.disabled]}>
-        {props.text ?? props.children}
+      <DBText style={[
+        { color: Boolean(props.disabled) ? c.textDisabled : linkColor, textDecorationLine: "underline", fontSize },
+        Boolean(props.disabled) && { textDecorationLine: "none" },
+      ]}>
+        {props.text ?? props.children}{arrow}
       </DBText>
     </Pressable>
   );
@@ -2014,6 +2027,7 @@ function mkStyles(c: typeof DBTheme.light) {
     chevron: { fontSize: 12, color: c.textMuted },
     body: { overflow: "hidden" as const },
     bodyInner: { paddingHorizontal: 16, paddingBottom: 14 },
+    bodyText: { fontSize: 13, color: c.textMuted },
   };
 }
 
@@ -2065,7 +2079,7 @@ function DBAccordionItemFn(props: DBAccordionItemProps & {
       <Animated.View style={[styles.body, { maxHeight, opacity: anim }]}>
         <View style={styles.bodyInner}>
           {(props as any).content
-            ? <DBText>{(props as any).content}</DBText>
+            ? <DBText style={styles.bodyText}>{(props as any).content}</DBText>
             : props.children}
         </View>
       </Animated.View>
@@ -3286,7 +3300,6 @@ export default DBNotification;
   'section/section.tsx': `import React from "react";
 import { View } from "react-native";
 import { useDBFont } from "../../providers/font-provider";
-import { DBTheme } from "../../shared/tokens";
 import type { DBSectionProps } from "./model";
 
 // Vertical padding (padding-block) per density + spacing level
@@ -3301,7 +3314,7 @@ const INLINE_PAD = 16;
 
 function DBSection(props: DBSectionProps) {
   const { isDark } = useDBFont();
-  const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
+  const sectionBg = isDark ? "#062736" : "#ebf5fe";
   const density: string = (props as any).density ?? "regular";
   const spacing: string = (props as any).spacing ?? "medium";
   const densityMap = BLOCK_SPACING[density] ?? BLOCK_SPACING.regular;
@@ -3314,7 +3327,7 @@ function DBSection(props: DBSectionProps) {
           paddingVertical: blockPad,
           paddingHorizontal: INLINE_PAD,
           width: "100%",
-          backgroundColor: c.bg,
+          backgroundColor: sectionBg,
         },
         (props as any).style,
       ]}
