@@ -1214,7 +1214,11 @@ function DBNavigationItem(props: DBNavigationItemProps) {
         <Modal visible={dropdownVisible} transparent animationType="fade" onRequestClose={closeDropdown}>
           <Pressable style={StyleSheet.absoluteFillObject} onPress={closeDropdown} />
           <View style={[styles.panel, { top: panelTop, left: panelLeft, width: panelW, backgroundColor: c.bg, borderColor: c.border, shadowColor: "#000" }]}>
-            <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              bounces={false}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ flexDirection: "column" }}
+            >
               {React.Children.map(props.subNavigation as React.ReactNode, (child, i) => (
                 <DropdownItem key={i} child={child} depth={0} onCloseRoot={closeDropdown} c={c} borderColor={c.border} />
               ))}
@@ -1232,6 +1236,7 @@ const styles = StyleSheet.create({
   chevron: { fontSize: 11 },
   panel: {
     position: "absolute",
+    flexDirection: "column",
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 8,
     shadowOffset: { width: 0, height: 4 },
