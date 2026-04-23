@@ -1438,6 +1438,7 @@ import {
   ScrollView,
   Animated,
   StyleSheet,
+  Dimensions,
 } from "react-native";
 import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
@@ -1445,7 +1446,7 @@ import { DBTheme } from "../../shared/tokens";
 import { DBDrawerProps } from "./model";
 
 const DURATION = 260;
-const DRAWER_SIZE = 320;
+const DRAWER_SIZE = Math.min(Math.round(Dimensions.get("window").width * 0.82), 480);
 const OFF = 800; // guaranteed off-screen offset
 
 function DBDrawerFn(props: DBDrawerProps, component: any) {
