@@ -66,7 +66,15 @@ export default function HeaderShowcase() {
                 subNavigation={<>
                   <DBNavigationItem label="Button" onPress={() => {}} />
                   <DBNavigationItem label="Badge" onPress={() => {}} />
-                  <DBNavigationItem label="Input" onPress={() => {}} />
+                  <DBNavigationItem
+                    label="Form"
+                    subNavigation={<>
+                      <DBNavigationItem label="Input" onPress={() => {}} />
+                      <DBNavigationItem label="Select" onPress={() => {}} />
+                      <DBNavigationItem label="Checkbox" onPress={() => {}} />
+                      <DBNavigationItem label="Radio" onPress={() => {}} />
+                    </>}
+                  />
                   <DBNavigationItem label="Card" onPress={() => {}} />
                 </>}
               />

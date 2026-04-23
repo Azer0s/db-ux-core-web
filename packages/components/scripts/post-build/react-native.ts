@@ -1081,19 +1081,71 @@ export default DBNavigation;
 import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
-import { DBTheme, DBSpacing } from "../../shared/tokens";
+import { DBTheme } from "../../shared/tokens";
 
 export type DBNavigationItemProps = {
   label?: string;
   active?: boolean;
   disabled?: boolean | string;
   onPress?: () => void;
-  /** Sub-navigation items rendered as a dropdown panel */
   subNavigation?: React.ReactNode;
-  /** Controlled expansion state */
   subNavigationExpanded?: boolean | string;
   children?: React.ReactNode;
 };
+
+type DropdownItemProps = {
+  child: React.ReactNode;
+  depth: number;
+  onCloseRoot: () => void;
+  c: typeof DBTheme.light;
+  borderColor: string;
+};
+
+function DropdownItem({ child, depth, onCloseRoot, c, borderColor }: DropdownItemProps) {
+  const [subOpen, setSubOpen] = useState(false);
+  if (!React.isValidElement(child)) return null;
+  const p = child.props as any;
+  const hasSubNav = Boolean(p.subNavigation);
+  const label = p.label ?? p.children;
+  const indent = 16 + depth * 14;
+
+  return (
+    <View>
+      <Pressable
+        style={({ pressed }) => [
+          {
+            paddingLeft: indent, paddingRight: 16, paddingVertical: 12,
+            borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: borderColor,
+            flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "space-between" as const,
+          },
+          pressed && { backgroundColor: c.bgSurface },
+        ]}
+        onPress={() => {
+          if (hasSubNav) {
+            setSubOpen((v) => !v);
+          } else {
+            onCloseRoot();
+            p.onPress?.();
+          }
+        }}
+      >
+        <DBText weight={p.active ? "bold" : "regular"} style={{ color: p.active ? c.brandText : c.text, flex: 1 }}>
+          {label}
+        </DBText>
+        {hasSubNav && (
+          <DBText style={{ fontSize: 11, color: c.textMuted }}>{subOpen ? "▴" : "▾"}</DBText>
+        )}
+      </Pressable>
+      {hasSubNav && subOpen && (
+        <View style={{ borderLeftWidth: 2, borderLeftColor: c.brandPrimary, marginLeft: indent + 4 }}>
+          {React.Children.map(p.subNavigation, (sub: React.ReactNode, j: number) => (
+            <DropdownItem key={j} child={sub} depth={depth + 1} onCloseRoot={onCloseRoot} c={c} borderColor={borderColor} />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
 
 function DBNavigationItem(props: DBNavigationItemProps) {
   const { isDark } = useDBFont();
@@ -1124,17 +1176,12 @@ function DBNavigationItem(props: DBNavigationItemProps) {
     }
   }
 
-  function closeDropdown() {
-    setDropdownVisible(false);
-  }
+  function closeDropdown() { setDropdownVisible(false); }
 
   const winW = Dimensions.get("window").width;
-  // Clamp panel so it doesn't overflow the right edge
-  const panelW = Math.min(200, winW - 16);
+  const panelW = Math.min(220, winW - 16);
   const panelLeft = Math.max(8, Math.min(triggerPos.x, winW - panelW - 8));
   const panelTop = triggerPos.y + triggerPos.h;
-
-  const styles = mkStyles(c);
 
   return (
     <>
@@ -1153,54 +1200,23 @@ function DBNavigationItem(props: DBNavigationItemProps) {
       >
         <View style={styles.labelRow}>
           {props.label ? (
-            <DBText
-              weight={props.active ? "bold" : "regular"}
-              style={{ color: props.active ? c.brandText : c.textMuted }}
-            >
+            <DBText weight={props.active ? "bold" : "regular"} style={{ color: props.active ? c.brandText : c.textMuted }}>
               {props.label}
             </DBText>
           ) : props.children}
           {hasDropdown && (
-            <DBText style={[styles.chevron, { color: c.textMuted }]}>
-              {isExpanded ? " ▴" : " ▾"}
-            </DBText>
+            <DBText style={[styles.chevron, { color: c.textMuted }]}>{isExpanded ? " ▴" : " ▾"}</DBText>
           )}
         </View>
       </Pressable>
 
       {hasDropdown && (
         <Modal visible={dropdownVisible} transparent animationType="fade" onRequestClose={closeDropdown}>
-          {/* Backdrop to close on outside tap */}
           <Pressable style={StyleSheet.absoluteFillObject} onPress={closeDropdown} />
-          <View style={[styles.panel, {
-            top: panelTop,
-            left: panelLeft,
-            width: panelW,
-            backgroundColor: c.bg,
-            borderColor: c.border,
-            shadowColor: "#000",
-          }]}>
+          <View style={[styles.panel, { top: panelTop, left: panelLeft, width: panelW, backgroundColor: c.bg, borderColor: c.border, shadowColor: "#000" }]}>
             <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
               {React.Children.map(props.subNavigation as React.ReactNode, (child, i) => (
-                <Pressable
-                  key={i}
-                  style={({ pressed }) => [styles.dropdownItem, pressed && { backgroundColor: c.bgSurface }]}
-                  onPress={() => {
-                    closeDropdown();
-                    if (React.isValidElement(child) && (child.props as any).onPress) {
-                      (child.props as any).onPress();
-                    }
-                  }}
-                >
-                  {React.isValidElement(child) ? (
-                    <DBText
-                      weight={(child.props as any).active ? "bold" : "regular"}
-                      style={{ color: (child.props as any).active ? c.brandText : c.text }}
-                    >
-                      {(child.props as any).label ?? (child.props as any).children}
-                    </DBText>
-                  ) : child}
-                </Pressable>
+                <DropdownItem key={i} child={child} depth={0} onCloseRoot={closeDropdown} c={c} borderColor={c.border} />
               ))}
             </ScrollView>
           </View>
@@ -1210,39 +1226,22 @@ function DBNavigationItem(props: DBNavigationItemProps) {
   );
 }
 
-function mkStyles(c: typeof DBTheme.light) {
-  return StyleSheet.create({
-    item: {
-      paddingHorizontal: 12,
-      paddingTop: 12,
-      paddingBottom: 9,
-      borderBottomWidth: 3,
-    },
-    labelRow: {
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    chevron: {
-      fontSize: 11,
-    },
-    panel: {
-      position: "absolute",
-      borderWidth: StyleSheet.hairlineWidth,
-      borderRadius: 8,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.14,
-      shadowRadius: 12,
-      elevation: 8,
-      maxHeight: 320,
-      overflow: "hidden",
-    },
-    dropdownItem: {
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-    },
-  });
-}
+const styles = StyleSheet.create({
+  item: { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 9, borderBottomWidth: 3 },
+  labelRow: { flexDirection: "row", alignItems: "center" },
+  chevron: { fontSize: 11 },
+  panel: {
+    position: "absolute",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    elevation: 8,
+    maxHeight: 400,
+    overflow: "hidden",
+  },
+});
 
 export default DBNavigationItem;
 `,
