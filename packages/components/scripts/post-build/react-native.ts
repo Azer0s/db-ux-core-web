@@ -3337,37 +3337,47 @@ import { View } from "react-native";
 import { useDBFont } from "../../providers/font-provider";
 import type { DBSectionProps } from "./model";
 
-// Vertical padding (padding-block) per density + spacing level
-// Based on web tokens at 1rem = 16px (mobile scale)
-const BLOCK_SPACING: Record<string, Record<string, number>> = {
-  functional: { none: 0, small: 28, medium: 40, large: 64 },
-  regular:    { none: 0, small: 32, medium: 48, large: 80 },
-  expressive: { none: 0, small: 48, medium: 80, large: 120 },
+// spacing = outer padding around the card block
+const SPACING_PAD: Record<string, number> = {
+  none: 0, small: 16, medium: 32, large: 48,
 };
-// Horizontal padding (padding-inline): --db-spacing-fixed-md = 1rem = 16px
-const INLINE_PAD = 16;
+
+// density = gap between child cards
+const DENSITY_GAP: Record<string, number> = {
+  functional: 8, regular: 16, expressive: 24,
+};
+
+// width = max-width of the section itself (centers itself when not full)
+const WIDTH_MAP: Record<string, number | "100%"> = {
+  small: 240, medium: 320, large: 420, full: "100%",
+};
 
 function DBSection(props: DBSectionProps) {
   const { isDark } = useDBFont();
   const sectionBg = isDark ? "#062736" : "#ebf5fe";
-  const density: string = (props as any).density ?? "regular";
   const spacing: string = (props as any).spacing ?? "medium";
-  const densityMap = BLOCK_SPACING[density] ?? BLOCK_SPACING.regular;
-  const blockPad = densityMap[spacing] ?? densityMap.medium;
+  const density: string = (props as any).density ?? "regular";
+  const widthKey: string = (props as any).width ?? "full";
+
+  const pad = SPACING_PAD[spacing] ?? SPACING_PAD.medium;
+  const gap = DENSITY_GAP[density] ?? DENSITY_GAP.regular;
+  const sectionWidth = WIDTH_MAP[widthKey] ?? "100%";
 
   return (
     <View
       style={[
         {
-          paddingVertical: blockPad,
-          paddingHorizontal: INLINE_PAD,
-          width: "100%",
+          padding: pad,
+          width: sectionWidth,
+          alignSelf: "center",
           backgroundColor: sectionBg,
         },
         (props as any).style,
       ]}
     >
-      {props.children}
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap }}>
+        {props.children}
+      </View>
     </View>
   );
 }
