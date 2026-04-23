@@ -1076,7 +1076,7 @@ function DBNavigation(props: DBNavigationExtraProps) {
 export default DBNavigation;
 `,
 
-	/* ---- DBNavigationItem → styled pressable nav item with dropdown ---- */
+	/* ---- DBNavigationItem → nav item with flyout side panels ---- */
 	'navigation-item/navigation-item.tsx': `import React, { useRef, useState } from "react";
 import { Dimensions, Modal, Pressable, StyleSheet, View } from "react-native";
 import DBText from "../text/text";
@@ -1093,12 +1093,11 @@ export type DBNavigationItemProps = {
   children?: React.ReactNode;
 };
 
-type DropdownItemProps = {
-  child: React.ReactNode;
-  depth: number;
-  onCloseRoot: () => void;
-  c: typeof DBTheme.light;
-  borderColor: string;
+type PanelLevel = {
+  items: React.ReactElement[];
+  left: number;
+  top: number;
+  activeIdx: number | null;
 };
 
 function flattenChildren(node: React.ReactNode): React.ReactElement[] {
@@ -1109,87 +1108,67 @@ function flattenChildren(node: React.ReactNode): React.ReactElement[] {
   return [node as React.ReactElement];
 }
 
-function DropdownItem({ child, depth, onCloseRoot, c, borderColor }: DropdownItemProps) {
-  const [subOpen, setSubOpen] = useState(false);
-  if (!React.isValidElement(child)) return null;
-  const p = child.props as any;
-  const hasSubNav = Boolean(p.subNavigation);
-  const label = p.label ?? p.children;
-  const indent = 16 + depth * 14;
-
-  return (
-    <View>
-      <Pressable
-        style={({ pressed }) => [
-          {
-            paddingLeft: indent, paddingRight: 16, paddingVertical: 12,
-            borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: borderColor,
-            flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "space-between" as const,
-          },
-          pressed && { backgroundColor: c.bgSurface },
-        ]}
-        onPress={() => {
-          if (hasSubNav) {
-            setSubOpen((v) => !v);
-          } else {
-            onCloseRoot();
-            p.onPress?.();
-          }
-        }}
-      >
-        <DBText weight={p.active ? "bold" : "regular"} style={{ color: p.active ? c.brandText : c.text, flex: 1 }}>
-          {label}
-        </DBText>
-        {hasSubNav && (
-          <DBText style={{ fontSize: 11, color: c.textMuted }}>{subOpen ? "▴" : "▾"}</DBText>
-        )}
-      </Pressable>
-      {hasSubNav && subOpen && (
-        <View style={{ flexDirection: "column", borderLeftWidth: 2, borderLeftColor: c.brandPrimary, marginLeft: indent + 4 }}>
-          {flattenChildren(p.subNavigation).map((sub, j) => (
-            <DropdownItem key={j} child={sub} depth={depth + 1} onCloseRoot={onCloseRoot} c={c} borderColor={borderColor} />
-          ))}
-        </View>
-      )}
-    </View>
-  );
-}
+const PANEL_W = 200;
+const PANEL_GAP = 4;
 
 function DBNavigationItem(props: DBNavigationItemProps) {
   const { isDark } = useDBFont();
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
   const triggerRef = useRef<View>(null);
-  const [dropdownVisible, setDropdownVisible] = useState(false);
-  const [triggerPos, setTriggerPos] = useState({ x: 0, y: 0, w: 0, h: 0 });
+  const [visible, setVisible] = useState(false);
+  const [panels, setPanels] = useState<PanelLevel[]>([]);
 
   const hasDropdown = Boolean(props.subNavigation);
   const isExpanded = props.subNavigationExpanded !== undefined
     ? Boolean(props.subNavigationExpanded)
-    : dropdownVisible;
+    : visible;
 
-  function handlePress() {
-    if (hasDropdown) {
-      if (triggerRef.current) {
-        (triggerRef.current as any).measureInWindow(
-          (x: number, y: number, w: number, h: number) => {
-            setTriggerPos({ x, y, w, h });
-            setDropdownVisible((v) => !v);
-          }
-        );
-      } else {
-        setDropdownVisible((v) => !v);
-      }
-    } else {
-      props.onPress?.();
-    }
+  function openDropdown() {
+    if (!triggerRef.current) return;
+    (triggerRef.current as any).measureInWindow((x: number, y: number, _w: number, h: number) => {
+      const { width: winW } = Dimensions.get("window");
+      const left = Math.max(8, Math.min(x, winW - PANEL_W - 8));
+      const top = y + h;
+      setPanels([{ items: flattenChildren(props.subNavigation), left, top, activeIdx: null }]);
+      setVisible(true);
+    });
   }
 
-  function closeDropdown() { setDropdownVisible(false); }
+  function close() {
+    setVisible(false);
+    setPanels([]);
+  }
 
-  const winW = Dimensions.get("window").width;
-  const panelW = Math.min(220, winW - 16);
-  const panelLeft = Math.max(8, Math.min(triggerPos.x, winW - panelW - 8));
-  const panelTop = triggerPos.y + triggerPos.h;
+  function handlePress() {
+    if (hasDropdown) openDropdown();
+    else props.onPress?.();
+  }
+
+  function handleItemPress(depthIdx: number, itemIdx: number, item: React.ReactElement) {
+    const p = item.props as any;
+    const subItems = flattenChildren(p.subNavigation);
+    if (subItems.length > 0) {
+      // Open sub-panel to the right (or left if overflows)
+      const { width: winW } = Dimensions.get("window");
+      const parentPanel = panels[depthIdx];
+      let subLeft = parentPanel.left + PANEL_W + PANEL_GAP;
+      if (subLeft + PANEL_W > winW - 8) {
+        subLeft = parentPanel.left - PANEL_W - PANEL_GAP;
+      }
+      const subTop = parentPanel.top;
+      // Mark active in parent, drop any deeper panels, push new one
+      setPanels(prev => {
+        const updated = prev.slice(0, depthIdx + 1).map((panel, i) =>
+          i === depthIdx ? { ...panel, activeIdx: itemIdx } : panel
+        );
+        updated.push({ items: subItems, left: Math.max(8, subLeft), top: subTop, activeIdx: null });
+        return updated;
+      });
+    } else {
+      close();
+      p.onPress?.();
+    }
+  }
 
   return (
     <>
@@ -1219,33 +1198,49 @@ function DBNavigationItem(props: DBNavigationItemProps) {
       </Pressable>
 
       {hasDropdown && (
-        <Modal visible={dropdownVisible} transparent animationType="fade" onRequestClose={closeDropdown}>
-          <Pressable
-            onPress={closeDropdown}
-            style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-          />
-          <View style={{
-            position: "absolute",
-            top: panelTop,
-            left: panelLeft,
-            width: panelW,
-            maxHeight: 400,
-            flexDirection: "column",
-            backgroundColor: c.bg,
-            borderWidth: StyleSheet.hairlineWidth,
-            borderColor: c.border,
-            borderRadius: 8,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.14,
-            shadowRadius: 12,
-            elevation: 8,
-            overflow: "hidden",
-          }}>
-            {flattenChildren(props.subNavigation).map((child, i) => (
-              <DropdownItem key={i} child={child} depth={0} onCloseRoot={closeDropdown} c={c} borderColor={c.border} />
-            ))}
-          </View>
+        <Modal visible={visible} transparent animationType="fade" onRequestClose={close}>
+          <Pressable style={StyleSheet.absoluteFillObject} onPress={close} />
+          {panels.map((panel, depth) => (
+            <View
+              key={depth}
+              style={[styles.panel, {
+                top: panel.top,
+                left: panel.left,
+                width: PANEL_W,
+                backgroundColor: c.bg,
+                borderColor: c.border,
+                shadowColor: "#000",
+              }]}
+            >
+              {panel.items.map((item, idx) => {
+                const p = item.props as any;
+                const label = p.label ?? p.children ?? "";
+                const hasSub = flattenChildren(p.subNavigation).length > 0;
+                const isActive = panel.activeIdx === idx;
+                return (
+                  <Pressable
+                    key={idx}
+                    style={({ pressed }) => [
+                      styles.row,
+                      { borderBottomColor: c.border },
+                      (pressed || isActive) && { backgroundColor: c.bgSurface },
+                    ]}
+                    onPress={() => handleItemPress(depth, idx, item)}
+                  >
+                    <DBText
+                      weight={p.active || isActive ? "bold" : "regular"}
+                      style={{ color: p.active ? c.brandText : c.text, flex: 1 }}
+                    >
+                      {label}
+                    </DBText>
+                    {hasSub && (
+                      <DBText style={{ fontSize: 14, color: c.textMuted }}>›</DBText>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
         </Modal>
       )}
     </>
@@ -1256,6 +1251,25 @@ const styles = StyleSheet.create({
   item: { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 9, borderBottomWidth: 3 },
   labelRow: { flexDirection: "row", alignItems: "center" },
   chevron: { fontSize: 11 },
+  panel: {
+    position: "absolute",
+    flexDirection: "column",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    elevation: 8,
+    maxHeight: 420,
+    overflow: "hidden",
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
 });
 
 export default DBNavigationItem;
