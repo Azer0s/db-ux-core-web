@@ -2183,14 +2183,16 @@ import { useDBFont } from "../../providers/font-provider";
 import { DBTheme, DBTypography, DBSpacing, DBBorderRadius } from "../../shared/tokens";
 import { DBCheckboxProps } from "./model";
 
+type MaterialIconsType = React.ComponentType<{ name: string; size: number; color?: string; accessibilityElementsHidden?: boolean }>;
+
 function mkStyles(c: typeof DBTheme.light) {
   return {
     container: { marginVertical: DBSpacing.xs },
     row: { flexDirection: "row" as const, alignItems: "center" as const, gap: DBSpacing.sm },
     box: { width: 20, height: 20, borderWidth: 2, borderColor: c.borderStrong, borderRadius: DBBorderRadius.sm - 1, alignItems: "center" as const, justifyContent: "center" as const },
-    boxChecked: { backgroundColor: c.text, borderColor: c.text },
+    boxChecked: { backgroundColor: c.text, borderWidth: 0 },
+    boxIndeterminate: { backgroundColor: c.text, borderWidth: 0 },
     boxDisabled: { borderColor: c.textDisabled, backgroundColor: c.bgSurface },
-    tick: { color: c.bg, fontSize: 13, fontWeight: DBTypography.weightBold },
     label: { fontSize: DBTypography.sizeSM, color: c.text, flex: 1 },
     labelDisabled: { color: c.textDisabled },
   };
@@ -2203,6 +2205,11 @@ function DBCheckboxFn(props: DBCheckboxProps, component: any) {
   const styles = mkStyles(c);
   const [internal, setInternal] = useState(Boolean((props as any).defaultChecked));
   const checked = props.checked !== undefined ? Boolean(props.checked) : internal;
+  const indeterminate = Boolean((props as any).indeterminate);
+
+  // Lazy require — avoids PlatformConstants crash on startup
+  const _mi = require("@expo/vector-icons/MaterialIcons");
+  const MaterialIcons: MaterialIconsType = _mi.default ?? _mi;
 
   function handlePress() {
     if (Boolean(props.disabled)) return;
@@ -2220,8 +2227,13 @@ function DBCheckboxFn(props: DBCheckboxProps, component: any) {
         accessibilityRole="checkbox"
         accessibilityState={{ checked, disabled: Boolean(props.disabled) }}
       >
-        <View style={[styles.box, checked && styles.boxChecked, Boolean(props.disabled) && styles.boxDisabled]}>
-          {checked && <DBText style={styles.tick}>✓</DBText>}
+        <View style={[styles.box, checked && styles.boxChecked, indeterminate && styles.boxIndeterminate, Boolean(props.disabled) && styles.boxDisabled]}>
+          {checked && (
+            <MaterialIcons name="check" size={14} color={c.bg} accessibilityElementsHidden />
+          )}
+          {!checked && indeterminate && (
+            <MaterialIcons name="remove" size={14} color={c.bg} accessibilityElementsHidden />
+          )}
         </View>
         {(props.label || props.children) && (
           <DBText style={[styles.label, Boolean(props.disabled) && styles.labelDisabled]}>
