@@ -3370,7 +3370,14 @@ function DBTabList(props: DBTabListProps) {
       {isFull ? (
         <View style={styles.fullRow}>{children}</View>
       ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.content}>
+        <ScrollView
+          horizontal
+          scrollEnabled
+          nestedScrollEnabled
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+          style={styles.scroll}
+        >
           {children}
         </ScrollView>
       )}
@@ -3379,8 +3386,9 @@ function DBTabList(props: DBTabListProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { borderBottomWidth: StyleSheet.hairlineWidth, width: "100%" },
-  content: { flexDirection: "row", alignItems: "stretch" },
+  container: { borderBottomWidth: StyleSheet.hairlineWidth, alignSelf: "stretch" },
+  scroll: { flexGrow: 0 },
+  content: { flexDirection: "row", alignItems: "center" },
   fullRow: { flexDirection: "row" },
 });
 
