@@ -15,6 +15,9 @@ import LinkShowcase from "./screens/LinkShowcase";
 import StackShowcase from "./screens/StackShowcase";
 import DrawerShowcase from "./screens/DrawerShowcase";
 import OverlayShowcase from "./screens/OverlayShowcase";
+import AccordionShowcase from "./screens/AccordionShowcase";
+import IconShowcase from "./screens/IconShowcase";
+import HeaderShowcase from "./screens/HeaderShowcase";
 
 const SCREENS = [
   { key: "button", label: "Button", component: ButtonShowcase },
@@ -26,9 +29,12 @@ const SCREENS = [
   { key: "layout", label: "Layout", component: LayoutShowcase },
   { key: "card", label: "Card", component: CardShowcase },
   { key: "stack", label: "Stack", component: StackShowcase },
+  { key: "accordion", label: "Accordion", component: AccordionShowcase },
   { key: "link", label: "Link", component: LinkShowcase },
+  { key: "icon", label: "Icon", component: IconShowcase },
   { key: "tabs", label: "Tabs", component: TabsShowcase },
   { key: "navigation", label: "Navigation", component: NavigationShowcase },
+  { key: "header", label: "Header", component: HeaderShowcase },
   { key: "drawer", label: "Drawer", component: DrawerShowcase },
   { key: "overlay", label: "Overlay", component: OverlayShowcase },
 ] as const;

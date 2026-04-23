@@ -1503,6 +1503,7 @@ export default DBDrawer;
 	/* ---- DBTooltip → expo-blur backdrop ---- */
 	'tooltip/tooltip.tsx': `import React, { forwardRef, useState, useRef } from "react";
 import {
+  Dimensions,
   Modal,
   View,
   Pressable,
@@ -1513,15 +1514,19 @@ import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
 import { DBTooltipProps } from "./model";
 
+type Placement = "top" | "bottom" | "left" | "right";
+
 function mkStyles(c: typeof DBTheme.light) {
-  return {
-    container: {},
+  return StyleSheet.create({
+    container: { alignSelf: "flex-start" },
+    backdrop: { flex: 1 },
     tooltip: {
-      position: "absolute" as const,
+      position: "absolute",
       backgroundColor: c.text,
       borderRadius: 6,
-      padding: 10,
-      maxWidth: 220,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      maxWidth: 240,
       shadowColor: c.shadowColor,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.2,
@@ -1529,7 +1534,7 @@ function mkStyles(c: typeof DBTheme.light) {
       elevation: 4,
     },
     tooltipText: { color: c.bg, fontSize: 13, lineHeight: 18 },
-  };
+  });
 }
 
 function DBTooltipFn(props: DBTooltipProps, component: any) {
@@ -1537,13 +1542,20 @@ function DBTooltipFn(props: DBTooltipProps, component: any) {
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
   const [visible, setVisible] = useState(false);
   const triggerRef = useRef<View>(null);
-  const [pos, setPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [pos, setPos] = useState({ x: 0, y: 0, w: 0, h: 0 });
+
+  // First child is the trigger; remaining children or tooltipText is the content.
+  const childArray = React.Children.toArray(props.children);
+  const trigger = childArray[0];
+  const tooltipContent = (props as any).tooltipText
+    ? (props as any).tooltipText
+    : childArray.slice(1);
 
   function handlePress() {
     if (triggerRef.current) {
       (triggerRef.current as any).measure(
-        (_fx: number, _fy: number, w: number, h: number, px: number, py: number) => {
-          setPos({ x: px, y: py, width: w, height: h });
+        (_: number, __: number, w: number, h: number, px: number, py: number) => {
+          setPos({ x: px, y: py, w, h });
           setVisible(true);
         }
       );
@@ -1552,32 +1564,41 @@ function DBTooltipFn(props: DBTooltipProps, component: any) {
     }
   }
 
+  const placement: Placement = ((props as any).placement ?? "bottom") as Placement;
+  const { width: winW, height: winH } = Dimensions.get("window");
+  const GAP = 8;
+
+  function positionStyle() {
+    const { x, y, w, h } = pos;
+    switch (placement) {
+      case "top":    return { bottom: winH - y + GAP, left: Math.min(x, winW - 248) };
+      case "left":   return { top: y, right: winW - x + GAP };
+      case "right":  return { top: y, left: x + w + GAP };
+      default:       return { top: y + h + GAP, left: Math.min(x, winW - 248) };
+    }
+  }
+
   const styles = mkStyles(c);
 
   return (
     <View style={styles.container} ref={component}>
       <Pressable ref={triggerRef} onPress={handlePress}>
-        {props.children}
+        {trigger}
       </Pressable>
       <Modal
         visible={visible}
         transparent
         animationType="fade"
         onRequestClose={() => setVisible(false)}
+        statusBarTranslucent
       >
-        <Pressable
-          style={StyleSheet.absoluteFill}
-          onPress={() => setVisible(false)}
-        >
-          <View
-            style={[
-              styles.tooltip,
-              { top: pos.y + pos.height + 8, left: pos.x },
-            ]}
-          >
-            <DBText style={styles.tooltipText}>
-              {(props as any).tooltipText ?? props.children}
-            </DBText>
+        <Pressable style={styles.backdrop} onPress={() => setVisible(false)}>
+          <View style={[styles.tooltip, positionStyle()]} pointerEvents="none">
+            {typeof tooltipContent === "string" ? (
+              <DBText style={styles.tooltipText}>{tooltipContent}</DBText>
+            ) : (
+              <View>{tooltipContent as any}</View>
+            )}
           </View>
         </Pressable>
       </Modal>
@@ -2496,23 +2517,50 @@ export default DBBadge;
   'brand/brand.tsx': `import React from "react";
 import { View, StyleSheet } from "react-native";
 import DBText from "../text/text";
+import { useDBFont } from "../../providers/font-provider";
+import { DBTheme } from "../../shared/tokens";
 import type { DBBrandProps } from "./model";
 
 function DBBrand(props: DBBrandProps) {
+  const { isDark } = useDBFont();
+  const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
+
   return (
     <View style={styles.container}>
-      {props.text ? (
-        <DBText style={styles.text}>{props.text}</DBText>
-      ) : (
-        props.children
+      {/* DB logo badge: red square with "db" lettering */}
+      <View style={styles.logoBadge}>
+        <DBText style={styles.logoText}>db</DBText>
+      </View>
+      {props.text && (
+        <>
+          <View style={[styles.separator, { backgroundColor: c.border }]} />
+          <DBText style={[styles.productName, { color: c.text }]}>{props.text}</DBText>
+        </>
       )}
+      {!props.text && props.children}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flexDirection: "row", alignItems: "center", padding: 8 },
-  text: { fontSize: 20, fontWeight: "bold" },
+  container: { flexDirection: "row", alignItems: "center", gap: 10 },
+  logoBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 6,
+    backgroundColor: "#ec0016",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoText: {
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "900",
+    letterSpacing: -0.5,
+    lineHeight: 18,
+  },
+  separator: { width: 1, height: 24 },
+  productName: { fontSize: 16, fontWeight: "600", letterSpacing: -0.2 },
 });
 
 export default DBBrand;
@@ -2528,17 +2576,25 @@ import type { DBCardProps } from "./model";
 function DBCard(props: DBCardProps) {
   const { isDark } = useDBFont();
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
+  const level = String(props.elevationLevel ?? "1") as "1" | "2" | "3";
+
+  const elevationMap = {
+    "1": { bg: c.bg,          shadowOpacity: 0.06, shadowRadius: 2,  shadowOffset: { width: 0, height: 1 }, elevation: 1 },
+    "2": { bg: c.bgSurface,   shadowOpacity: 0.13, shadowRadius: 6,  shadowOffset: { width: 0, height: 3 }, elevation: 4 },
+    "3": { bg: c.bgElevated,  shadowOpacity: 0.22, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
+  };
+  const e = elevationMap[level] ?? elevationMap["1"];
 
   const cardStyle = {
-    backgroundColor: c.bgSurface,
+    backgroundColor: e.bg,
     borderRadius: DBBorderRadius.md,
     padding: DBSpacing.md,
     marginVertical: DBSpacing.xs,
     shadowColor: c.shadowColor,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: e.shadowOffset,
+    shadowOpacity: e.shadowOpacity,
+    shadowRadius: e.shadowRadius,
+    elevation: e.elevation,
   };
 
   if (props.onClick) {

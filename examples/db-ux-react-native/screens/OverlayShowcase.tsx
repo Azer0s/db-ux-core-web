@@ -7,9 +7,10 @@ import {
 import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <DBText variant="overline" style={styles.sectionTitle}>{title}</DBText>
+      <DBText style={[styles.sectionTitle, { color: c.muted }]}>{title}</DBText>
       {children}
     </View>
   );
