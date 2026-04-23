@@ -42,7 +42,7 @@ const ICON_GROUPS: { label: string; icons: string[] }[] = [
 
 const SIZES = ["16", "20", "24", "32", "48"] as const;
 
-function IconTile({ name, onPress }: { name: string; onPress: () => void }) {
+function IconTile({ name, size, onPress }: { name: string; size: string; onPress: () => void }) {
   const c = useScreenColors();
   return (
     <Pressable
@@ -50,7 +50,7 @@ function IconTile({ name, onPress }: { name: string; onPress: () => void }) {
       onPress={onPress}
       accessibilityLabel={name}
     >
-      <DBIcon icon={name} weight="24" />
+      <DBIcon icon={name} weight={size} />
       <DBText style={[styles.iconLabel, { color: c.muted }]}>{name}</DBText>
     </Pressable>
   );
@@ -86,7 +86,7 @@ export default function IconShowcase() {
         <Section key={label} title={label}>
           <View style={styles.grid}>
             {icons.map((name) => (
-              <IconTile key={name} name={name} onPress={() => setLastTapped(name)} />
+              <IconTile key={name} name={name} size={selectedSize} onPress={() => setLastTapped(name)} />
             ))}
           </View>
         </Section>
