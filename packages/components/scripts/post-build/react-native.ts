@@ -2655,11 +2655,12 @@ function DBCard(props: DBCardProps) {
     elevation: e.elevation,
   };
 
-  if (props.onClick) {
+  if (props.onClick || (props as any).behavior === "interactive") {
     return (
       <Pressable
-        style={({ pressed }) => [cardStyle, pressed && { opacity: 0.85 }]}
+        style={({ pressed }) => [cardStyle, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
         onPress={props.onClick as any}
+        accessibilityRole="button"
       >
         {props.children}
       </Pressable>

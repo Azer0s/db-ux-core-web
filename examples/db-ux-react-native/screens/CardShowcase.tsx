@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import {
   DBCard, DBBadge, DBButton,
@@ -18,6 +18,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function CardShowcase() {
   const c = useScreenColors();
+  const [tapCount, setTapCount] = useState(0);
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <DBText style={[styles.heading, { color: c.heading }]}>DBCard</DBText>
@@ -37,8 +38,10 @@ export default function CardShowcase() {
       </Section>
 
       <Section title="Interactive card">
-        <DBCard behavior="interactive" elevationLevel="1">
-          <DBText style={[styles.cardTitle, { color: c.heading }]}>Tap me</DBText>
+        <DBCard behavior="interactive" elevationLevel="2" onClick={() => setTapCount((n) => n + 1)}>
+          <DBText style={[styles.cardTitle, { color: c.heading }]}>
+            Tap me{tapCount > 0 ? ` · tapped ${tapCount}×` : ""}
+          </DBText>
           <DBText style={[styles.cardBody, { color: c.body }]}>Interactive cards respond to touch with a pressed state.</DBText>
         </DBCard>
       </Section>
