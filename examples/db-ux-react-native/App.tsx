@@ -203,14 +203,14 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    width: 32,
+    width: 56,
   },
   fadeRight: {
     position: "absolute",
     right: 0,
     top: 0,
     bottom: 0,
-    width: 32,
+    width: 56,
   },
   tab: {
     paddingHorizontal: 14,
