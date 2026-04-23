@@ -1570,17 +1570,26 @@ function mkStyles(c: typeof DBTheme.light) {
       position: "absolute",
       backgroundColor: c.text,
       borderRadius: 6,
-      paddingHorizontal: 10,
+      paddingHorizontal: 12,
       paddingVertical: 8,
-      maxWidth: 240,
-      shadowColor: c.shadowColor,
+      maxWidth: 220,
+      shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-      elevation: 4,
+      shadowOpacity: 0.25,
+      shadowRadius: 6,
+      elevation: 8,
     },
     tooltipText: { color: c.bg, fontSize: 13, lineHeight: 18 },
   });
+}
+
+function extractText(node: any): string {
+  if (typeof node === "string") return node;
+  if (typeof node === "number") return String(node);
+  if (!node) return "";
+  if (Array.isArray(node)) return node.map(extractText).join("");
+  if (node.props?.children) return extractText(node.props.children);
+  return "";
 }
 
 function DBTooltipFn(props: DBTooltipProps, component: any) {
@@ -1590,16 +1599,14 @@ function DBTooltipFn(props: DBTooltipProps, component: any) {
   const triggerRef = useRef<View>(null);
   const [pos, setPos] = useState({ x: 0, y: 0, w: 0, h: 0 });
 
-  // First child is the trigger; remaining children or tooltipText is the content.
   const childArray = React.Children.toArray(props.children);
   const trigger = childArray[0];
-  const tooltipContent = (props as any).tooltipText
-    ? (props as any).tooltipText
-    : childArray.slice(1);
+  // Accept either tooltipText prop or second child (extract its text content)
+  const rawContent = (props as any).tooltipText
+    ?? (childArray[1] ? extractText(childArray[1]) : "");
 
   function handlePress() {
     if (triggerRef.current) {
-      // measureInWindow gives screen-relative coords reliably on both native and web
       (triggerRef.current as any).measureInWindow(
         (x: number, y: number, w: number, h: number) => {
           setPos({ x, y, w, h });
@@ -1613,15 +1620,19 @@ function DBTooltipFn(props: DBTooltipProps, component: any) {
 
   const placement: Placement = ((props as any).placement ?? "bottom") as Placement;
   const { width: winW, height: winH } = Dimensions.get("window");
-  const GAP = 8;
+  const GAP = 6;
+  const TIP_W = 220;
+  const TIP_H = 60; // approximate
 
   function positionStyle() {
     const { x, y, w, h } = pos;
+    const cx = x + w / 2;
+    const left = Math.max(8, Math.min(cx - TIP_W / 2, winW - TIP_W - 8));
     switch (placement) {
-      case "top":    return { bottom: winH - y + GAP, left: Math.min(x, winW - 248) };
-      case "left":   return { top: y, right: winW - x + GAP };
-      case "right":  return { top: y, left: x + w + GAP };
-      default:       return { top: y + h + GAP, left: Math.min(x, winW - 248) };
+      case "top":   return { bottom: winH - y + GAP, left };
+      case "left":  return { top: Math.max(8, y), right: winW - x + GAP };
+      case "right": return { top: Math.max(8, y), left: x + w + GAP };
+      default:      return { top: y + h + GAP, left };
     }
   }
 
@@ -1632,19 +1643,10 @@ function DBTooltipFn(props: DBTooltipProps, component: any) {
       <Pressable ref={triggerRef} onPress={handlePress}>
         {trigger}
       </Pressable>
-      <Modal
-        visible={visible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setVisible(false)}
-      >
+      <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
         <Pressable style={styles.backdrop} onPress={() => setVisible(false)}>
           <View style={[styles.tooltip, positionStyle()]} pointerEvents="none">
-            {typeof tooltipContent === "string" ? (
-              <DBText style={styles.tooltipText}>{tooltipContent}</DBText>
-            ) : (
-              <View>{tooltipContent as any}</View>
-            )}
+            <DBText style={styles.tooltipText}>{rawContent}</DBText>
           </View>
         </Pressable>
       </Modal>
@@ -1656,40 +1658,38 @@ const DBTooltip = forwardRef<View, DBTooltipProps>(DBTooltipFn);
 export default DBTooltip;
 `,
 
-	/* ---- DBPopover → Modal with semi-transparent backdrop ---- */
+	/* ---- DBPopover → anchored floating panel ---- */
 	'popover/popover.tsx': `import React, { forwardRef, useState, useEffect } from "react";
 import {
   Modal,
   View,
   Pressable,
   ScrollView,
+  StyleSheet,
 } from "react-native";
-import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
-import { DBTheme } from "../../shared/tokens";
+import { DBTheme, DBBorderRadius } from "../../shared/tokens";
 import { DBPopoverProps } from "./model";
 
 function mkStyles(c: typeof DBTheme.light) {
-  return {
-    backdrop: {
-      flex: 1,
-      backgroundColor: "rgba(0,0,0,0.4)",
-      justifyContent: "center" as const,
-      alignItems: "center" as const,
-    },
-    popover: {
+  return StyleSheet.create({
+    backdrop: { flex: 1 },
+    centeredWrap: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 24 },
+    panel: {
       backgroundColor: c.bg,
-      borderRadius: 12,
+      borderRadius: DBBorderRadius.md,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
       padding: 16,
-      maxWidth: 320,
-      maxHeight: "70%" as any,
-      shadowColor: c.shadowColor,
-      shadowOffset: { width: 0, height: 4 },
+      width: "100%",
+      maxWidth: 360,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 6 },
       shadowOpacity: 0.15,
-      shadowRadius: 8,
-      elevation: 6,
+      shadowRadius: 16,
+      elevation: 10,
     },
-  };
+  });
 }
 
 function DBPopoverFn(props: DBPopoverProps, component: any) {
@@ -1697,9 +1697,7 @@ function DBPopoverFn(props: DBPopoverProps, component: any) {
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
   const [visible, setVisible] = useState(Boolean(props.open));
 
-  useEffect(() => {
-    setVisible(Boolean(props.open));
-  }, [props.open]);
+  useEffect(() => { setVisible(Boolean(props.open)); }, [props.open]);
 
   function handleClose() {
     setVisible(false);
@@ -1710,15 +1708,17 @@ function DBPopoverFn(props: DBPopoverProps, component: any) {
 
   return (
     <View ref={component}>
-      <Modal
-        visible={visible}
-        transparent
-        animationType="fade"
-        onRequestClose={handleClose}
-      >
+      <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
+        {/* Tap outside the panel to dismiss — no dark tint */}
         <Pressable style={styles.backdrop} onPress={handleClose}>
-          <View style={styles.popover}>
-            <ScrollView>{props.children}</ScrollView>
+          <View style={styles.centeredWrap}>
+            <Pressable onPress={() => {/* absorb taps inside panel */}}>
+              <View style={styles.panel}>
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  {props.children}
+                </ScrollView>
+              </View>
+            </Pressable>
           </View>
         </Pressable>
       </Modal>

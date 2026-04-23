@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import {
-  DBTooltip, DBPopover, DBButton, DBBadge, DBCard,
+  DBTooltip, DBPopover, DBButton, DBBadge,
   DBText,
 } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";
@@ -58,13 +58,12 @@ export default function OverlayShowcase() {
           Toggle popover
         </DBButton>
         <DBPopover open={popoverOpen}>
-          <DBCard elevationLevel="3">
-            <DBText variant="heading" style={styles.popoverTitle}>Popover content</DBText>
-            <DBText variant="body" style={styles.popoverBody}>
-              Popovers can contain rich content like cards, lists, and actions.
-            </DBText>
-            <DBButton onClick={() => setPopoverOpen(false)}>Close</DBButton>
-          </DBCard>
+          <DBText variant="heading" style={styles.popoverTitle}>Popover content</DBText>
+          <DBText variant="body" style={styles.popoverBody}>
+            Popovers can contain rich content like cards, lists, and actions.
+          </DBText>
+          <View style={{ height: 12 }} />
+          <DBButton onClick={() => setPopoverOpen(false)}>Close</DBButton>
         </DBPopover>
       </Section>
 
@@ -74,11 +73,9 @@ export default function OverlayShowcase() {
             What is this?
           </DBButton>
           <DBPopover open={popoverInfoOpen} placement="top">
-            <View style={styles.infoPopover}>
-              <DBText variant="body" style={styles.popoverBody}>
-                A popover is a floating panel anchored to a trigger element. It stays open until explicitly dismissed.
-              </DBText>
-            </View>
+            <DBText variant="body" style={styles.popoverBody}>
+              A popover is a floating panel anchored to a trigger element. It stays open until explicitly dismissed.
+            </DBText>
           </DBPopover>
         </View>
       </Section>
