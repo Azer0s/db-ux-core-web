@@ -87,4 +87,5 @@ const styles = StyleSheet.create({
   section: { marginBottom: 28 },
   sectionTitle: { fontSize: 13, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
   badgeHeader: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
+  statusRow: { flexDirection: "row", alignItems: "center", gap: 8 },
 });

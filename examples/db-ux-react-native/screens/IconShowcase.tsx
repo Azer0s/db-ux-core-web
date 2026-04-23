@@ -41,8 +41,9 @@ const ICON_GROUPS: { label: string; icons: string[] }[] = [
 ];
 
 const SIZES = ["16", "20", "24", "32", "48"] as const;
+type IconSize = typeof SIZES[number];
 
-function IconTile({ name, size, onPress }: { name: string; size: string; onPress: () => void }) {
+function IconTile({ name, size, onPress }: { name: string; size: IconSize; onPress: () => void }) {
   const c = useScreenColors();
   return (
     <Pressable

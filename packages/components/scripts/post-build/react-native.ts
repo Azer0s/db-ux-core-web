@@ -899,6 +899,43 @@ const COMPONENT_OVERRIDES: Record<string, string> = {
 }
 `,
 
+	'accordion-item/model.ts': `import { GlobalProps, InitializedState, NameProps, NameState, TextProps, ToggleEventProps, ToggleEventState } from '../../shared/model';
+export type DBAccordionItemDefaultProps = {
+  defaultOpen?: boolean;
+  disabled?: boolean | string;
+  headline?: any;
+  headlinePlain?: string;
+  /** Plain-text content rendered inside the accordion body */
+  content?: string;
+} & TextProps;
+export type DBAccordionItemProps = DBAccordionItemDefaultProps & GlobalProps & ToggleEventProps & NameProps;
+export type DBAccordionItemDefaultState = { _open?: boolean };
+export type DBAccordionItemState = DBAccordionItemDefaultState & ToggleEventState<HTMLElement> & InitializedState & NameState;
+`,
+
+	'tab-list/model.ts': `import { GlobalProps } from '../../shared/model';
+export type DBTabListDefaultProps = {
+  /** Use "full" to have tabs fill the available width */
+  width?: "full" | "auto";
+  /** Horizontal alignment of tab labels when width="full" */
+  alignment?: "start" | "center";
+};
+export type DBTabListProps = DBTabListDefaultProps & GlobalProps;
+export type DBTabListDefaultState = {};
+export type DBTabListState = DBTabListDefaultState;
+`,
+
+	'section/model.ts': `import { ContainerWidthProps, GlobalProps, SpacingProps } from '../../shared/model';
+import type { ViewStyle } from "react-native";
+export type DBSectionDefaultProps = {
+  /** Native style override */
+  style?: ViewStyle | ViewStyle[];
+};
+export type DBSectionProps = DBSectionDefaultProps & GlobalProps & SpacingProps & ContainerWidthProps;
+export type DBSectionDefaultState = {};
+export type DBSectionState = DBSectionDefaultState;
+`,
+
 	'text/text.tsx': `import React from "react";
 import { Text } from "react-native";
 import { useDBFont } from "../../providers/font-provider";
@@ -2366,6 +2403,27 @@ export default DBRadio;
 `,
 
 	/* ---- DBSelect → Modal picker ---- */
+	'select/model.ts': `export type DBSelectOptionType = { value?: string; label?: string; disabled?: boolean };
+export type DBSelectDefaultProps = {
+  multiple?: boolean;
+  /** Options as label/value objects or plain strings */
+  options?: DBSelectOptionType[] | string[];
+  value?: string | string[];
+  placeholder?: string;
+  label?: string;
+  disabled?: boolean | string;
+  required?: boolean | string;
+  invalid?: boolean | string;
+  valid?: boolean | string;
+  message?: string;
+  validMessage?: string;
+  invalidMessage?: string;
+  onChange?: (v: string | string[]) => void;
+};
+import { GlobalProps } from "../../shared/model";
+export type DBSelectProps = DBSelectDefaultProps & GlobalProps;
+`,
+
 	'select/select.tsx': `import React, { forwardRef, useState, useId } from "react";
 import { View, Pressable, Modal, FlatList } from "react-native";
 import DBText from "../text/text";
@@ -2400,7 +2458,7 @@ function DBSelectFn(props: DBSelectProps, component: any) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(String(props.value ?? ""));
 
-  const options: DBSelectOptionType[] = Array.isArray(props.options) ? props.options : [];
+  const options: any[] = Array.isArray(props.options) ? props.options : [];
   const selectedLabel = options.find((o) =>
     typeof o === "string" ? o === selected : (o as any).value === selected
   );
@@ -2452,7 +2510,7 @@ function DBSelectFn(props: DBSelectProps, component: any) {
           </View>
         </Pressable>
       </Modal>
-      {stringPropVisible(props.message, props.showMessage) && (
+      {props.message && (
         <DBInfotext size="small" semantic="adaptive">{props.message}</DBInfotext>
       )}
     </View>
@@ -2603,6 +2661,25 @@ export default DBTextarea;
 `,
 
 	/* ---- DBCustomSelect → Modal multi-select picker ---- */
+	'custom-select/model.ts': `export type CustomSelectOptionType = { value?: string; label?: string; disabled?: boolean };
+export type DBCustomSelectDefaultProps = {
+  label?: string;
+  placeholder?: string;
+  multiple?: boolean | string;
+  disabled?: boolean | string;
+  required?: boolean | string;
+  /** Selected value(s) — string or comma-separated string or array */
+  values?: string | string[];
+  options?: CustomSelectOptionType[] | string[];
+  message?: string;
+  validMessage?: string;
+  invalidMessage?: string;
+  onOptionSelected?: (values: string[]) => void;
+};
+import { GlobalProps } from "../../shared/model";
+export type DBCustomSelectProps = DBCustomSelectDefaultProps & GlobalProps;
+`,
+
 	'custom-select/custom-select.tsx': `import React, { forwardRef, useState } from "react";
 import { View, Pressable, Modal, FlatList } from "react-native";
 import DBText from "../text/text";
@@ -2638,7 +2715,7 @@ function DBCustomSelectFn(props: DBCustomSelectProps, component: any) {
   const [selected, setSelected] = useState<string[]>(
     Array.isArray(props.values) ? props.values as string[] : props.values ? [props.values as string] : []
   );
-  const options = Array.isArray(props.options) ? props.options : [];
+  const options: any[] = Array.isArray(props.options) ? props.options : [];
   const display = selected.length ? selected.join(", ") : props.placeholder ?? "Select...";
 
   function handleSelect(val: string) {
