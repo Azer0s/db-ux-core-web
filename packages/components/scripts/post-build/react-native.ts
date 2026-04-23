@@ -3374,7 +3374,7 @@ function DBSection(props: DBSectionProps) {
   return (
     <View
       style={[
-        { padding: pad, backgroundColor: sectionBg },
+        { padding: pad, alignSelf: "flex-start", backgroundColor: sectionBg },
         (props as any).style,
       ]}
     >

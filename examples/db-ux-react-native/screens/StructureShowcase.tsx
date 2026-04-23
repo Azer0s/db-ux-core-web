@@ -37,7 +37,7 @@ export default function StructureShowcase() {
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: c.bg }]}>
       <DBText style={[styles.heading, { color: c.heading }]}>DBSection</DBText>
 
-      <DBText style={[styles.group, { color: c.heading }]}>width (card width)</DBText>
+      <DBText style={[styles.group, { color: c.heading }]}>width (each card's width)</DBText>
       <Demo label="small (80px)" width="small" spacing="medium" density="regular" />
       <Demo label="medium (120px)" width="medium" spacing="medium" density="regular" />
       <Demo label="large (180px)" width="large" spacing="medium" density="regular" />
@@ -45,17 +45,40 @@ export default function StructureShowcase() {
       <DBDivider style={{ marginVertical: 20 }} />
 
       <DBText style={[styles.group, { color: c.heading }]}>density (gap between cards)</DBText>
-      <Demo label="functional (tight, 8px)" width="medium" spacing="medium" density="functional" />
-      <Demo label="regular (16px)" width="medium" spacing="medium" density="regular" />
-      <Demo label="expressive (loose, 24px)" width="medium" spacing="medium" density="expressive" />
+      <Demo label="functional — 8px" width="medium" spacing="medium" density="functional" />
+      <Demo label="regular — 16px" width="medium" spacing="medium" density="regular" />
+      <Demo label="expressive — 24px" width="medium" spacing="medium" density="expressive" />
 
       <DBDivider style={{ marginVertical: 20 }} />
 
-      <DBText style={[styles.group, { color: c.heading }]}>spacing (padding around cards)</DBText>
-      <Demo label="none (0px)" width="medium" spacing="none" density="regular" />
-      <Demo label="small (16px)" width="medium" spacing="small" density="regular" />
-      <Demo label="medium (32px)" width="medium" spacing="medium" density="regular" />
-      <Demo label="large (48px)" width="medium" spacing="large" density="regular" />
+      <DBText style={[styles.group, { color: c.heading }]}>spacing (padding around group)</DBText>
+      <Demo label="none" width="medium" spacing="none" density="regular" />
+      <Demo label="small" width="medium" spacing="small" density="regular" />
+      <Demo label="medium" width="medium" spacing="medium" density="regular" />
+      <Demo label="large" width="medium" spacing="large" density="regular" />
+
+      <DBDivider style={{ marginVertical: 20 }} />
+
+      <DBText style={[styles.group, { color: c.heading }]}>Composition</DBText>
+      <DBText style={[styles.demoLabel, { color: c.muted, paddingHorizontal: 0, marginBottom: 4 }]}>Side by side</DBText>
+      <View style={{ flexDirection: "row", gap: 12, paddingHorizontal: 20 }}>
+        <DBSection width="small" spacing="small" density="regular">
+          <SimpleCard label="A" /><SimpleCard label="B" />
+        </DBSection>
+        <DBSection width="small" spacing="small" density="regular">
+          <SimpleCard label="C" /><SimpleCard label="D" />
+        </DBSection>
+      </View>
+
+      <DBText style={[styles.demoLabel, { color: c.muted, paddingHorizontal: 0, marginTop: 12, marginBottom: 4 }]}>Stacked</DBText>
+      <View style={{ gap: 8, paddingHorizontal: 20 }}>
+        <DBSection width="medium" spacing="small" density="regular">
+          <SimpleCard label="A" /><SimpleCard label="B" />
+        </DBSection>
+        <DBSection width="medium" spacing="small" density="functional">
+          <SimpleCard label="C" /><SimpleCard label="D" />
+        </DBSection>
+      </View>
 
       <DBDivider style={{ marginVertical: 20 }} />
 
@@ -81,6 +104,6 @@ const styles = StyleSheet.create({
   heading: { fontSize: 24, fontWeight: "700", marginTop: 16, marginBottom: 8, paddingHorizontal: 20 },
   group: { fontSize: 17, fontWeight: "600", marginBottom: 8, paddingHorizontal: 20 },
   demo: { marginBottom: 4, paddingHorizontal: 20 },
-  demoLabel: { fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 },
+  demoLabel: { fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.6, paddingHorizontal: 20, marginBottom: 4 },
   verticalRow: { flexDirection: "row", alignItems: "center", gap: 12 },
 });
