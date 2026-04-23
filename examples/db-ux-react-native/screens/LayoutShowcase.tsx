@@ -30,7 +30,7 @@ export default function LayoutShowcase() {
       <DBText style={[styles.heading, { color: c.heading }]}>Layout</DBText>
 
       <Section title="DBCard — Static">
-        <DBCard elevationLevel="1">
+        <DBCard elevationLevel="2">
           <DBText style={[styles.cardTitle, { color: c.heading }]}>Simple Card</DBText>
           <DBText style={[styles.cardBody, { color: c.body }]}>
             Cards are surface containers for related content and actions.
@@ -39,21 +39,21 @@ export default function LayoutShowcase() {
       </Section>
 
       <Section title="DBCard — Interactive (tappable)">
-        <DBCard elevationLevel="1" onClick={() => setPressCount((n) => n + 1)}>
+        <DBCard elevationLevel="2" onClick={() => setPressCount((n) => n + 1)}>
           <DBText style={[styles.cardTitle, { color: c.heading }]}>Tappable Card</DBText>
           <DBText style={[styles.cardBody, { color: c.body }]}>Tap me! Pressed {pressCount} time{pressCount !== 1 ? "s" : ""}.</DBText>
         </DBCard>
       </Section>
 
       <Section title="DBCard — With Badge">
-        <DBCard elevationLevel="1">
+        <DBCard elevationLevel="2">
           <View style={styles.cardHeader}>
             <DBText style={[styles.cardTitle, { color: c.heading }]}>ICE 617</DBText>
             <DBBadge semantic="successful" emphasis="strong">On time</DBBadge>
           </View>
           <DBText style={[styles.cardBody, { color: c.body }]}>Hamburg Hbf → Berlin Hbf · Departure 14:22</DBText>
         </DBCard>
-        <DBCard elevationLevel="1">
+        <DBCard elevationLevel="2">
           <View style={styles.cardHeader}>
             <DBText style={[styles.cardTitle, { color: c.heading }]}>RE 4</DBText>
             <DBBadge semantic="warning">5 min late</DBBadge>
