@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { DBTooltip, DBPopover, DBButton, DBBadge, DBCard, DBText } from "@db-ux/react-native-core-components";
+import { DBTooltip, DBPopover, DBButton, DBBadge, DBCard,
+  DBText,
+} from "@db-ux/react-native-core-components";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (

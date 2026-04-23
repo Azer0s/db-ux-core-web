@@ -4,7 +4,9 @@ import {
   DBNotification,
   DBInfotext,
   DBTag,
-, DBText } from "@db-ux/react-native-core-components";
+,
+  DBText,
+} from "@db-ux/react-native-core-components";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (

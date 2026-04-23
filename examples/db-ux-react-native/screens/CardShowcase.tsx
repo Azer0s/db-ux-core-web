@@ -1,6 +1,8 @@
 import React from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { DBCard, DBBadge, DBButton , DBText } from "@db-ux/react-native-core-components";
+import { DBCard, DBBadge, DBButton ,
+  DBText,
+} from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

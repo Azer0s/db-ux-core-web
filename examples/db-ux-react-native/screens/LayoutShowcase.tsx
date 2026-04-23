@@ -7,7 +7,9 @@ import {
   DBAccordion,
   DBButton,
   DBBadge,
-, DBText } from "@db-ux/react-native-core-components";
+,
+  DBText,
+} from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
