@@ -1,8 +1,8 @@
 import React, { useRef, useState } from "react";
-import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Platform, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { DBFontProvider, DBText, useDBFont } from "@db-ux/react-native-core-components";
+import { DBFontProvider, DBIconToggle, DBText, useDBFont } from "@db-ux/react-native-core-components";
 import BadgeShowcase from "./screens/BadgeShowcase";
 import ButtonShowcase from "./screens/ButtonShowcase";
 import InputShowcase from "./screens/InputShowcase";
@@ -65,7 +65,6 @@ function AppInner({ onToggleScheme }: { onToggleScheme: () => void }) {
   const tabBorderColor = isDark ? "#3b3e44" : "#e1e2e6";
   const tabTextColor = isDark ? "#a6abb6" : "#5a5e68";
   const tabActiveColor = "#ec0016";
-  const toggleBg = isDark ? "#2e3036" : "#f3f3f5";
 
   function handleScroll(e: any) {
     const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
@@ -131,22 +130,16 @@ function AppInner({ onToggleScheme }: { onToggleScheme: () => void }) {
           )}
         </View>
 
-        {/* Light / Dark segmented toggle */}
-        <View style={[styles.segmentWrap, { backgroundColor: toggleBg }]}>
-          <Pressable
-            style={[styles.segment, !isDark && { backgroundColor: bg, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 2, elevation: 2 }]}
-            onPress={() => !isDark ? null : onToggleScheme()}
-            accessibilityLabel="Light mode"
-          >
-            <DBText style={[styles.segmentText, { color: !isDark ? tabActiveColor : tabTextColor }]}>☀</DBText>
-          </Pressable>
-          <Pressable
-            style={[styles.segment, isDark && { backgroundColor: bg, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 2, elevation: 2 }]}
-            onPress={() => isDark ? null : onToggleScheme()}
-            accessibilityLabel="Dark mode"
-          >
-            <DBText style={[styles.segmentText, { color: isDark ? tabActiveColor : tabTextColor }]}>☾</DBText>
-          </Pressable>
+        {/* Light / Dark toggle */}
+        <View style={{ marginRight: 8 }}>
+          <DBIconToggle
+            options={[
+              { icon: "☀", value: "light", label: "Light mode" },
+              { icon: "☾", value: "dark",  label: "Dark mode"  },
+            ]}
+            value={isDark ? "dark" : "light"}
+            onChange={(v) => { if ((v === "dark") !== isDark) onToggleScheme(); }}
+          />
         </View>
       </View>
 
@@ -227,24 +220,6 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 13,
-  },
-  segmentWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 8,
-    padding: 3,
-    marginRight: 8,
-    gap: 2,
-  },
-  segment: {
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 6,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  segmentText: {
-    fontSize: 14,
   },
   content: {
     flex: 1,

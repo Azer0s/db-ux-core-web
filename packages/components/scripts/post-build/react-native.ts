@@ -2654,6 +2654,147 @@ function DBCustomSelectFn(props: DBCustomSelectProps, component: any) {
 const DBCustomSelect = forwardRef<View, DBCustomSelectProps>(DBCustomSelectFn);
 export default DBCustomSelect;
 `
+
+// ---- DBIconToggle ----
+, 'icon-toggle/model.ts': `import type React from "react";
+
+export interface DBIconToggleOption {
+  /** Unicode character or emoji used as the icon */
+  icon: string;
+  /** Unique value for this option */
+  value: string;
+  /** Accessibility label (falls back to value) */
+  label?: string;
+}
+
+export interface DBIconToggleProps {
+  /** Toggle options to render */
+  options: DBIconToggleOption[];
+  /** Currently selected value */
+  value: string;
+  /** Called when the user selects a different option */
+  onChange: (value: string) => void;
+}
+`
+
+, 'icon-toggle/icon-toggle.tsx': `import React, { useRef, useEffect } from "react";
+import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { useDBFont } from "../../providers/font-provider";
+import { DBTheme } from "../../shared/tokens";
+import type { DBIconToggleProps } from "./model";
+
+const ITEM_W = 36;
+const ITEM_H = 32;
+const PAD = 3;
+
+function DBIconToggle({ options, value, onChange }: DBIconToggleProps) {
+  const { isDark } = useDBFont();
+  const colors = isDark ? DBTheme.dark : DBTheme.light;
+
+  const selectedIdx = Math.max(0, options.findIndex((o) => o.value === value));
+
+  const anim = useRef(new Animated.Value(PAD + selectedIdx * ITEM_W)).current;
+
+  useEffect(() => {
+    Animated.spring(anim, {
+      toValue: PAD + selectedIdx * ITEM_W,
+      useNativeDriver: true,
+      tension: 280,
+      friction: 24,
+    }).start();
+  }, [selectedIdx]);
+
+  const totalW = options.length * ITEM_W + PAD * 2;
+  const pillH = ITEM_H + PAD * 2;
+
+  return (
+    <View
+      style={[
+        styles.track,
+        {
+          width: totalW,
+          height: pillH,
+          borderRadius: pillH / 2,
+          backgroundColor: colors.bgSurface,
+        },
+      ]}
+      accessibilityRole="radiogroup"
+    >
+      {/* Sliding indicator pill */}
+      <Animated.View
+        style={[
+          styles.pill,
+          {
+            width: ITEM_W,
+            height: ITEM_H,
+            borderRadius: ITEM_H / 2,
+            backgroundColor: colors.bg,
+            top: PAD,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: isDark ? 0.3 : 0.12,
+            shadowRadius: 3,
+            elevation: 3,
+            transform: [{ translateX: anim }],
+          },
+        ]}
+      />
+
+      {/* Tappable icon items (above the pill) */}
+      <View style={[styles.optionRow, { paddingHorizontal: PAD, paddingVertical: PAD }]}>
+        {options.map((opt, i) => {
+          const isActive = i === selectedIdx;
+          return (
+            <Pressable
+              key={opt.value}
+              style={[styles.option, { width: ITEM_W, height: ITEM_H }]}
+              onPress={() => { if (!isActive) onChange(opt.value); }}
+              accessibilityLabel={opt.label ?? opt.value}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: isActive }}
+            >
+              <Text
+                style={[
+                  styles.icon,
+                  { color: isActive ? colors.brandText : colors.textMuted },
+                ]}
+              >
+                {opt.icon}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  track: {
+    position: "relative",
+    overflow: "hidden",
+  },
+  pill: {
+    position: "absolute",
+    left: 0,
+  },
+  optionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    zIndex: 1,
+  },
+  option: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  icon: {
+    fontSize: 15,
+    lineHeight: 20,
+  },
+});
+
+export default DBIconToggle;
+`
 };
 
 // ---------------------------------------------------------------------------
@@ -3655,7 +3796,9 @@ export const getRootProps = (_props: any, _filter?: string[]): Record<string, un
 					`export { DBColorPalette, DBColorPaletteDark, DBTheme } from './shared/tokens';\n` +
 					`export type { DBThemeColors } from './shared/tokens';\n` +
 					`export { default as DBText } from './components/text/text';\n` +
-					`export type { DBTextProps } from './components/text/model';\n`,
+					`export type { DBTextProps } from './components/text/model';\n` +
+					`export { default as DBIconToggle } from './components/icon-toggle/icon-toggle';\n` +
+					`export type { DBIconToggleProps, DBIconToggleOption } from './components/icon-toggle/model';\n`,
 					'utf-8'
 				);
 				console.log('  [index] appended DBFontProvider + DBColorPalette exports');
