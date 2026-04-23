@@ -146,12 +146,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderBottomWidth: 1,
+    overflow: "hidden",
   },
   tabScroll: {
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 0,
   },
   tabBarContent: {
     paddingHorizontal: 4,
+    flexDirection: "row",
+    alignItems: "center",
   },
   tab: {
     paddingHorizontal: 14,
