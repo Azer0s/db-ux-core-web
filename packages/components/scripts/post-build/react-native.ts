@@ -928,6 +928,8 @@ export type DBTabListState = DBTabListDefaultState;
 	'section/model.ts': `import { ContainerWidthProps, GlobalProps, SpacingProps } from '../../shared/model';
 import type { ViewStyle } from "react-native";
 export type DBSectionDefaultProps = {
+  /** Visual density of the section: functional (compact), regular (default), expressive (spacious) */
+  density?: "functional" | "regular" | "expressive";
   /** Native style override */
   style?: ViewStyle | ViewStyle[];
 };
@@ -3283,36 +3285,34 @@ export default DBNotification;
 
   'section/section.tsx': `import React from "react";
 import { View } from "react-native";
-import { DBSpacing } from "../../shared/tokens";
 import type { DBSectionProps } from "./model";
 
-const SPACING_MAP: Record<string, number> = {
-  none:   0,
-  small:  DBSpacing.sm,
-  medium: DBSpacing.lg,
-  large:  DBSpacing.xl,
+// Vertical padding (padding-block) per density + spacing level
+// Based on web tokens at 1rem = 16px (mobile scale)
+const BLOCK_SPACING: Record<string, Record<string, number>> = {
+  functional: { none: 0, small: 28, medium: 40, large: 64 },
+  regular:    { none: 0, small: 32, medium: 48, large: 80 },
+  expressive: { none: 0, small: 48, medium: 80, large: 120 },
 };
-
-const WIDTH_MAP: Record<string, number | string> = {
-  full:   "100%",
-  small:  640,
-  medium: 960,
-  large:  1280,
-};
+// Horizontal padding (padding-inline): --db-spacing-fixed-md = 1rem = 16px
+const INLINE_PAD = 16;
 
 function DBSection(props: DBSectionProps) {
-  const blockPad = SPACING_MAP[(props as any).spacing ?? "medium"] ?? DBSpacing.lg;
-  const maxWidth = WIDTH_MAP[(props as any).width as string] ?? "100%";
+  const density: string = (props as any).density ?? "regular";
+  const spacing: string = (props as any).spacing ?? "medium";
+  const densityMap = BLOCK_SPACING[density] ?? BLOCK_SPACING.regular;
+  const blockPad = densityMap[spacing] ?? densityMap.medium;
 
   return (
     <View
-      style={{
-        paddingVertical: blockPad,
-        paddingHorizontal: DBSpacing.lg,
-        maxWidth: maxWidth as any,
-        width: "100%",
-        alignSelf: "center",
-      }}
+      style={[
+        {
+          paddingVertical: blockPad,
+          paddingHorizontal: INLINE_PAD,
+          width: "100%",
+        },
+        (props as any).style,
+      ]}
     >
       {props.children}
     </View>
@@ -3423,7 +3423,7 @@ const styles = StyleSheet.create({
 export default DBTag;
 `,
 
-  'tab-list/tab-list.tsx': `import React from "react";
+  'tab-list/tab-list.tsx': `import React, { useState } from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
@@ -3434,8 +3434,8 @@ function DBTabList(props: DBTabListProps) {
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
   const isFull = (props as any).width === "full";
   const alignment: "start" | "center" = (props as any).alignment ?? "start";
+  const [listWidth, setListWidth] = useState(0);
 
-  // Inject _full and _alignment into direct DBTabItem children
   const children = React.Children.map(props.children, (child) =>
     React.isValidElement(child)
       ? React.cloneElement(child as React.ReactElement<any>, { _full: isFull, _alignment: alignment })
@@ -3443,7 +3443,10 @@ function DBTabList(props: DBTabListProps) {
   );
 
   return (
-    <View style={[styles.container, { borderBottomColor: c.border }]}>
+    <View
+      style={[styles.container, { borderBottomColor: c.border }]}
+      onLayout={(e) => setListWidth(e.nativeEvent.layout.width)}
+    >
       {isFull ? (
         <View style={styles.fullRow}>{children}</View>
       ) : (
@@ -3453,7 +3456,7 @@ function DBTabList(props: DBTabListProps) {
           nestedScrollEnabled
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.content}
-          style={styles.scroll}
+          style={listWidth > 0 ? { width: listWidth } : styles.scrollFallback}
         >
           {children}
         </ScrollView>
@@ -3464,7 +3467,7 @@ function DBTabList(props: DBTabListProps) {
 
 const styles = StyleSheet.create({
   container: { borderBottomWidth: StyleSheet.hairlineWidth, alignSelf: "stretch" },
-  scroll: { flexGrow: 0 },
+  scrollFallback: { flexShrink: 1 },
   content: { flexDirection: "row", alignItems: "center" },
   fullRow: { flexDirection: "row" },
 });

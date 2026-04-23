@@ -12,6 +12,12 @@ function Label({ text }: { text: string }) {
   return <DBText style={[styles.label, { color: c.muted }]}>{text}</DBText>;
 }
 
+type Density = "functional" | "regular" | "expressive";
+type Spacing = "none" | "small" | "medium" | "large";
+
+const DENSITIES: Density[] = ["functional", "regular", "expressive"];
+const SPACINGS: Spacing[] = ["none", "small", "medium", "large"];
+
 export default function StructureShowcase() {
   const c = useScreenColors();
 
@@ -19,20 +25,28 @@ export default function StructureShowcase() {
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: c.bg }]}>
       <DBText style={[styles.heading, { color: c.heading }]}>Section &amp; Divider</DBText>
 
-      <Label text="DBSection — spacing small" />
-      <DBSection spacing="small" style={{ backgroundColor: c.surface, borderRadius: 8, marginBottom: 12 }}>
-        <DBText style={{ color: c.body }}>Content inside a small-spacing section.</DBText>
-      </DBSection>
-
-      <Label text="DBSection — spacing medium (default)" />
-      <DBSection style={{ backgroundColor: c.surface, borderRadius: 8, marginBottom: 12 }}>
-        <DBText style={{ color: c.body }}>Content inside a medium-spacing section. This is the default spacing used when no prop is set.</DBText>
-      </DBSection>
-
-      <Label text="DBSection — spacing large" />
-      <DBSection spacing="large" style={{ backgroundColor: c.surface, borderRadius: 8, marginBottom: 12 }}>
-        <DBText style={{ color: c.body }}>Content inside a large-spacing section.</DBText>
-      </DBSection>
+      {/* Density × Spacing grid */}
+      {DENSITIES.map((density) => (
+        <View key={density}>
+          <DBText style={[styles.groupTitle, { color: c.heading }]}>
+            Density: {density}
+          </DBText>
+          {SPACINGS.map((spacing) => (
+            <View key={spacing} style={{ marginBottom: 4 }}>
+              <Label text={`spacing: ${spacing}`} />
+              <DBSection
+                density={density}
+                spacing={spacing}
+                style={{ backgroundColor: c.surface, borderRadius: 8 }}
+              >
+                <DBText style={{ color: c.body }}>
+                  {density} · {spacing}
+                </DBText>
+              </DBSection>
+            </View>
+          ))}
+        </View>
+      ))}
 
       <Label text="DBDivider — horizontal" />
       <View style={{ marginBottom: 4 }}>
@@ -54,8 +68,9 @@ export default function StructureShowcase() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, paddingBottom: 48, gap: 4 },
-  heading: { fontSize: 24, fontWeight: "700", marginBottom: 16 },
-  label: { fontSize: 12, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 16, marginBottom: 6 },
+  container: { paddingHorizontal: 20, paddingBottom: 48, gap: 4 },
+  heading: { fontSize: 24, fontWeight: "700", marginTop: 16, marginBottom: 8 },
+  groupTitle: { fontSize: 18, fontWeight: "600", marginTop: 20, marginBottom: 4 },
+  label: { fontSize: 12, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 8, marginBottom: 4 },
   verticalRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 4 },
 });
