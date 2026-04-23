@@ -134,8 +134,8 @@ function AppInner({ onToggleScheme }: { onToggleScheme: () => void }) {
         <View style={{ marginRight: 8 }}>
           <DBIconToggle
             options={[
-              { icon: "☀", value: "light", label: "Light mode" },
-              { icon: "☾", value: "dark",  label: "Dark mode"  },
+              { icon: "light_mode", value: "light", label: "Light mode" },
+              { icon: "dark_mode",  value: "dark",  label: "Dark mode"  },
             ]}
             value={isDark ? "dark" : "light"}
             onChange={(v) => { if ((v === "dark") !== isDark) onToggleScheme(); }}

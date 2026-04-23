@@ -2655,11 +2655,10 @@ const DBCustomSelect = forwardRef<View, DBCustomSelectProps>(DBCustomSelectFn);
 export default DBCustomSelect;
 `
 
-// ---- DBIconToggle ----
 , 'icon-toggle/model.ts': `import type React from "react";
 
 export interface DBIconToggleOption {
-  /** Unicode character or emoji used as the icon */
+  /** DB icon name — same string as the DBIcon \`icon\` prop (e.g. "light_mode", "dark_mode") */
   icon: string;
   /** Unique value for this option */
   value: string;
@@ -2678,10 +2677,17 @@ export interface DBIconToggleProps {
 `
 
 , 'icon-toggle/icon-toggle.tsx': `import React, { useRef, useEffect } from "react";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, PanResponder, Pressable, StyleSheet, View } from "react-native";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
 import type { DBIconToggleProps } from "./model";
+
+type MaterialIconsType = React.ComponentType<{
+  name: string;
+  size: number;
+  color?: string;
+  accessibilityElementsHidden?: boolean;
+}>;
 
 const ITEM_W = 36;
 const ITEM_H = 32;
@@ -2690,60 +2696,103 @@ const PAD = 3;
 function DBIconToggle({ options, value, onChange }: DBIconToggleProps) {
   const { isDark } = useDBFont();
   const colors = isDark ? DBTheme.dark : DBTheme.light;
+  const count = options.length;
 
   const selectedIdx = Math.max(0, options.findIndex((o) => o.value === value));
+  const currentIdx = useRef(selectedIdx);
+  const dragStartX = useRef(PAD + selectedIdx * ITEM_W);
 
   const anim = useRef(new Animated.Value(PAD + selectedIdx * ITEM_W)).current;
 
   useEffect(() => {
+    currentIdx.current = selectedIdx;
+  }, [selectedIdx]);
+
+  useEffect(() => {
     Animated.spring(anim, {
       toValue: PAD + selectedIdx * ITEM_W,
-      useNativeDriver: true,
+      useNativeDriver: false,
       tension: 280,
       friction: 24,
     }).start();
   }, [selectedIdx]);
 
-  const totalW = options.length * ITEM_W + PAD * 2;
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 4,
+      onPanResponderGrant: () => {
+        anim.stopAnimation();
+        dragStartX.current = PAD + currentIdx.current * ITEM_W;
+      },
+      onPanResponderMove: (_, g) => {
+        const newX = Math.max(PAD, Math.min(PAD + (count - 1) * ITEM_W, dragStartX.current + g.dx));
+        anim.setValue(newX);
+      },
+      onPanResponderRelease: (_, g) => {
+        const rawX = dragStartX.current + g.dx - PAD;
+        const nearestIdx = Math.max(0, Math.min(count - 1, Math.round(rawX / ITEM_W)));
+        Animated.spring(anim, {
+          toValue: PAD + nearestIdx * ITEM_W,
+          useNativeDriver: false,
+          tension: 280,
+          friction: 24,
+        }).start();
+        if (nearestIdx !== currentIdx.current) {
+          onChange(options[nearestIdx].value);
+        }
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(anim, {
+          toValue: PAD + currentIdx.current * ITEM_W,
+          useNativeDriver: false,
+          tension: 280,
+          friction: 24,
+        }).start();
+      },
+    })
+  ).current;
+
+  const totalW = count * ITEM_W + PAD * 2;
   const pillH = ITEM_H + PAD * 2;
+
+  // Lazy require — same pattern as DBIcon to avoid PlatformConstants crash on startup
+  const _mi = require("@expo/vector-icons/MaterialIcons");
+  const MaterialIcons: MaterialIconsType = _mi.default ?? _mi;
 
   return (
     <View
-      style={[
-        styles.track,
-        {
-          width: totalW,
-          height: pillH,
-          borderRadius: pillH / 2,
-          backgroundColor: colors.bgSurface,
-        },
-      ]}
+      style={[styles.track, {
+        width: totalW,
+        height: pillH,
+        borderRadius: pillH / 2,
+        backgroundColor: colors.bgSurface,
+      }]}
+      {...panResponder.panHandlers}
       accessibilityRole="radiogroup"
     >
-      {/* Sliding indicator pill */}
+      {/* Sliding pill */}
       <Animated.View
-        style={[
-          styles.pill,
-          {
-            width: ITEM_W,
-            height: ITEM_H,
-            borderRadius: ITEM_H / 2,
-            backgroundColor: colors.bg,
-            top: PAD,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: isDark ? 0.3 : 0.12,
-            shadowRadius: 3,
-            elevation: 3,
-            transform: [{ translateX: anim }],
-          },
-        ]}
+        style={[styles.pill, {
+          width: ITEM_W,
+          height: ITEM_H,
+          borderRadius: ITEM_H / 2,
+          backgroundColor: colors.bg,
+          top: PAD,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: isDark ? 0.3 : 0.12,
+          shadowRadius: 3,
+          elevation: 3,
+          transform: [{ translateX: anim }],
+        }]}
       />
 
-      {/* Tappable icon items (above the pill) */}
+      {/* Icon options (above pill) */}
       <View style={[styles.optionRow, { paddingHorizontal: PAD, paddingVertical: PAD }]}>
         {options.map((opt, i) => {
           const isActive = i === selectedIdx;
+          const iconName = (opt.icon as string)?.replace(/_/g, "-");
           return (
             <Pressable
               key={opt.value}
@@ -2753,14 +2802,12 @@ function DBIconToggle({ options, value, onChange }: DBIconToggleProps) {
               accessibilityRole="radio"
               accessibilityState={{ checked: isActive }}
             >
-              <Text
-                style={[
-                  styles.icon,
-                  { color: isActive ? colors.brandText : colors.textMuted },
-                ]}
-              >
-                {opt.icon}
-              </Text>
+              <MaterialIcons
+                name={iconName}
+                size={18}
+                color={isActive ? colors.brandText : colors.textMuted}
+                accessibilityElementsHidden
+              />
             </Pressable>
           );
         })}
@@ -2786,10 +2833,6 @@ const styles = StyleSheet.create({
   option: {
     alignItems: "center",
     justifyContent: "center",
-  },
-  icon: {
-    fontSize: 15,
-    lineHeight: 20,
   },
 });
 
