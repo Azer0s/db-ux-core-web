@@ -1,13 +1,13 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { DBButton } from "@db-ux/react-native-core-components";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { DBButton, DBText } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: c.muted }]}>{title}</Text>
+      <DBText style={[styles.sectionTitle, { color: c.muted }]}>{title}</DBText>
       <View style={styles.row}>{children}</View>
     </View>
   );
@@ -19,7 +19,7 @@ export default function ButtonShowcase() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={[styles.heading, { color: c.heading }]}>DBButton</Text>
+      <DBText style={[styles.heading, { color: c.heading }]}>DBButton</DBText>
 
       <Section title="Variants">
         <DBButton variant="outlined" onClick={() => setPressCount((n) => n + 1)}>
@@ -55,7 +55,7 @@ export default function ButtonShowcase() {
       </Section>
 
       {pressCount > 0 && (
-        <Text style={styles.counter}>Pressed {pressCount} time{pressCount !== 1 ? "s" : ""} 🎉</Text>
+        <DBText style={styles.counter}>Pressed {pressCount} time{pressCount !== 1 ? "s" : ""} 🎉</DBText>
       )}
     </ScrollView>
   );

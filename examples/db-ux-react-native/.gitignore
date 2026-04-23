@@ -39,3 +39,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Proprietary fonts (not to be committed)
+assets/fonts/DBNeoScreenSans-*.ttf

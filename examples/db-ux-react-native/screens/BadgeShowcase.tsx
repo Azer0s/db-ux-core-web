@@ -1,13 +1,13 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { DBBadge } from "@db-ux/react-native-core-components";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { DBBadge , DBText } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: c.subtle }]}>{title}</Text>
+      <DBText style={[styles.sectionTitle, { color: c.subtle }]}>{title}</DBText>
       <View style={styles.row}>{children}</View>
     </View>
   );
@@ -17,7 +17,7 @@ export default function BadgeShowcase() {
   const c = useScreenColors();
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={[styles.heading, { color: c.heading }]}>DBBadge</Text>
+      <DBText style={[styles.heading, { color: c.heading }]}>DBBadge</DBText>
 
       <Section title="Semantic">
         <DBBadge>(Default) Adaptive</DBBadge>

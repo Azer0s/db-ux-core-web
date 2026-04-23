@@ -1,13 +1,13 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { DBInput, DBButton } from "@db-ux/react-native-core-components";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { DBInput, DBButton , DBText } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: c.muted }]}>{title}</Text>
+      <DBText style={[styles.sectionTitle, { color: c.muted }]}>{title}</DBText>
       {children}
     </View>
   );
@@ -26,7 +26,7 @@ export default function InputShowcase() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={[styles.heading, { color: c.heading }]}>DBInput</Text>
+      <DBText style={[styles.heading, { color: c.heading }]}>DBInput</DBText>
 
       <Section title="Basic">
         <DBInput label="Name" placeholder="Enter your name" />
@@ -114,7 +114,7 @@ export default function InputShowcase() {
           </DBButton>
         </View>
         {submitted && name && email.includes("@") && password.length >= 8 && (
-          <Text style={styles.success}>Form submitted successfully!</Text>
+          <DBText style={styles.success}>Form submitted successfully!</DBText>
         )}
       </Section>
     </ScrollView>

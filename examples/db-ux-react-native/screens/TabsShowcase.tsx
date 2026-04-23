@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import {
   DBTabs,
   DBTabList,
@@ -7,14 +7,14 @@ import {
   DBTabPanel,
   DBBadge,
   DBButton,
-} from "@db-ux/react-native-core-components";
+, DBText } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: c.muted }]}>{title}</Text>
+      <DBText style={[styles.sectionTitle, { color: c.muted }]}>{title}</DBText>
       {children}
     </View>
   );
@@ -30,7 +30,7 @@ export default function TabsShowcase() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={[styles.heading, { color: c.heading }]}>Tabs</Text>
+      <DBText style={[styles.heading, { color: c.heading }]}>Tabs</DBText>
 
       <Section title="DBTabs — items prop (auto-managed)">
         <View style={styles.tabContainer}>
@@ -59,7 +59,7 @@ export default function TabsShowcase() {
           activeTab === i ? (
             <DBTabPanel key={label}>
               <View style={styles.panelContent}>
-                <Text style={[styles.panelText, { color: c.body }]}>{label} panel content</Text>
+                <DBText style={[styles.panelText, { color: c.body }]}>{label} panel content</DBText>
                 <DBBadge semantic="informational">{label}</DBBadge>
               </View>
             </DBTabPanel>
@@ -80,7 +80,7 @@ export default function TabsShowcase() {
             ))}
           </DBTabList>
           <View style={[styles.verticalPanel, { backgroundColor: c.surface }]}>
-            <Text style={[styles.panelText, { color: c.body }]}>{vTabs[activeVertical]} content</Text>
+            <DBText style={[styles.panelText, { color: c.body }]}>{vTabs[activeVertical]} content</DBText>
           </View>
         </View>
       </Section>

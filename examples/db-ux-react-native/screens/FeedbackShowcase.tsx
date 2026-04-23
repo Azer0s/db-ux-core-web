@@ -1,15 +1,15 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import {
   DBNotification,
   DBInfotext,
   DBTag,
-} from "@db-ux/react-native-core-components";
+, DBText } from "@db-ux/react-native-core-components";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <DBText style={styles.sectionTitle}>{title}</DBText>
       {children}
     </View>
   );
@@ -20,7 +20,7 @@ export default function FeedbackShowcase() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.heading}>Feedback</Text>
+      <DBText style={styles.heading}>Feedback</DBText>
 
       <Section title="DBNotification — Semantics">
         <DBNotification headline="Adaptive" text="This is a neutral notification." />
@@ -67,7 +67,7 @@ export default function FeedbackShowcase() {
               onRemove={() => setTags((prev) => prev.filter((t) => t !== label))}
             />
           ))}
-          {tags.length === 0 && <Text style={styles.empty}>All tags removed</Text>}
+          {tags.length === 0 && <DBText style={styles.empty}>All tags removed</DBText>}
         </View>
       </Section>
     </ScrollView>

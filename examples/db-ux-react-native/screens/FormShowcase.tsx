@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import {
   DBCheckbox,
   DBRadio,
@@ -7,14 +7,14 @@ import {
   DBSelect,
   DBTextarea,
   DBButton,
-} from "@db-ux/react-native-core-components";
+, DBText } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: c.muted }]}>{title}</Text>
+      <DBText style={[styles.sectionTitle, { color: c.muted }]}>{title}</DBText>
       {children}
     </View>
   );
@@ -38,7 +38,7 @@ export default function FormShowcase() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={[styles.heading, { color: c.heading }]}>Form Controls</Text>
+      <DBText style={[styles.heading, { color: c.heading }]}>Form Controls</DBText>
 
       <Section title="DBCheckbox">
         <DBCheckbox

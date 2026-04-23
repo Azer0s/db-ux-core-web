@@ -1,13 +1,13 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { DBDrawer, DBButton, DBCard } from "@db-ux/react-native-core-components";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { DBDrawer, DBButton, DBCard , DBText } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: c.subtle }]}>{title}</Text>
+      <DBText style={[styles.sectionTitle, { color: c.subtle }]}>{title}</DBText>
       {children}
     </View>
   );
@@ -30,9 +30,9 @@ export default function DrawerShowcase() {
       </Section>
 
       <Section title="Backdrop variants">
-        <Text style={[styles.hint, { color: c.muted }]}>
+        <DBText style={[styles.hint, { color: c.muted }]}>
           The drawer above uses the default strong backdrop. Try the buttons below for different backdrop strengths.
-        </Text>
+        </DBText>
       </Section>
 
       <DBDrawer
@@ -40,12 +40,12 @@ export default function DrawerShowcase() {
         direction="left"
         backdrop="strong"
         onClose={() => setOpenLeft(false)}
-        drawerHeader={<Text style={[styles.drawerTitle, { color: c.heading }]}>Left drawer</Text>}
+        drawerHeader={<DBText style={[styles.drawerTitle, { color: c.heading }]}>Left drawer</DBText>}
       >
         <View style={styles.drawerContent}>
-          <Text style={[styles.drawerBody, { color: c.body }]}>
+          <DBText style={[styles.drawerBody, { color: c.body }]}>
             This drawer slides in from the left. Use it for navigation menus or filters.
-          </Text>
+          </DBText>
           <DBButton onClick={() => setOpenLeft(false)}>Close</DBButton>
         </View>
       </DBDrawer>
@@ -55,14 +55,14 @@ export default function DrawerShowcase() {
         direction="right"
         backdrop="weak"
         onClose={() => setOpenRight(false)}
-        drawerHeader={<Text style={[styles.drawerTitle, { color: c.heading }]}>Right drawer</Text>}
+        drawerHeader={<DBText style={[styles.drawerTitle, { color: c.heading }]}>Right drawer</DBText>}
       >
         <View style={styles.drawerContent}>
-          <Text style={[styles.drawerBody, { color: c.body }]}>
+          <DBText style={[styles.drawerBody, { color: c.body }]}>
             This drawer slides from the right with a weak backdrop.
-          </Text>
+          </DBText>
           <DBCard elevationLevel="1">
-            <Text style={[styles.drawerBody, { color: c.body }]}>Cards work inside drawers too.</Text>
+            <DBText style={[styles.drawerBody, { color: c.body }]}>Cards work inside drawers too.</DBText>
           </DBCard>
           <DBButton onClick={() => setOpenRight(false)}>Close</DBButton>
         </View>
@@ -74,12 +74,12 @@ export default function DrawerShowcase() {
         backdrop="strong"
         rounded
         onClose={() => setOpenBottom(false)}
-        drawerHeader={<Text style={[styles.drawerTitle, { color: c.heading }]}>Bottom sheet</Text>}
+        drawerHeader={<DBText style={[styles.drawerTitle, { color: c.heading }]}>Bottom sheet</DBText>}
       >
         <View style={styles.drawerContent}>
-          <Text style={[styles.drawerBody, { color: c.body }]}>
+          <DBText style={[styles.drawerBody, { color: c.body }]}>
             Bottom drawers are ideal for action sheets and contextual menus on mobile.
-          </Text>
+          </DBText>
           <DBButton onClick={() => setOpenBottom(false)}>Dismiss</DBButton>
         </View>
       </DBDrawer>

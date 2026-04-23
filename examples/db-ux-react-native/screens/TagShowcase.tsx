@@ -1,13 +1,13 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { DBTag } from "@db-ux/react-native-core-components";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { DBTag , DBText } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: c.subtle }]}>{title}</Text>
+      <DBText style={[styles.sectionTitle, { color: c.subtle }]}>{title}</DBText>
       {children}
     </View>
   );
@@ -65,7 +65,7 @@ export default function TagShowcase() {
           )}
         </Row>
         {removed.size > 0 && (
-          <Text style={[styles.hint, { color: c.subtle }]}>Removed: {[...removed].join(", ")}</Text>
+          <DBText style={[styles.hint, { color: c.subtle }]}>Removed: {[...removed].join(", ")}</DBText>
         )}
       </Section>
 

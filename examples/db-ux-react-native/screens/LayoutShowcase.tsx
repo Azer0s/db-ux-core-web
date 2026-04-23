@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import {
   DBCard,
   DBDivider,
@@ -7,14 +7,14 @@ import {
   DBAccordion,
   DBButton,
   DBBadge,
-} from "@db-ux/react-native-core-components";
+, DBText } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: c.muted }]}>{title}</Text>
+      <DBText style={[styles.sectionTitle, { color: c.muted }]}>{title}</DBText>
       {children}
     </View>
   );
@@ -26,50 +26,50 @@ export default function LayoutShowcase() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={[styles.heading, { color: c.heading }]}>Layout</Text>
+      <DBText style={[styles.heading, { color: c.heading }]}>Layout</DBText>
 
       <Section title="DBCard — Static">
         <DBCard>
-          <Text style={[styles.cardTitle, { color: c.heading }]}>Simple Card</Text>
-          <Text style={[styles.cardBody, { color: c.body }]}>
+          <DBText style={[styles.cardTitle, { color: c.heading }]}>Simple Card</DBText>
+          <DBText style={[styles.cardBody, { color: c.body }]}>
             Cards are surface containers for related content and actions.
-          </Text>
+          </DBText>
         </DBCard>
       </Section>
 
       <Section title="DBCard — Interactive (tappable)">
         <DBCard onClick={() => setPressCount((n) => n + 1)}>
-          <Text style={[styles.cardTitle, { color: c.heading }]}>Tappable Card</Text>
-          <Text style={[styles.cardBody, { color: c.body }]}>Tap me! Pressed {pressCount} time{pressCount !== 1 ? "s" : ""}.</Text>
+          <DBText style={[styles.cardTitle, { color: c.heading }]}>Tappable Card</DBText>
+          <DBText style={[styles.cardBody, { color: c.body }]}>Tap me! Pressed {pressCount} time{pressCount !== 1 ? "s" : ""}.</DBText>
         </DBCard>
       </Section>
 
       <Section title="DBCard — With Badge">
         <DBCard>
           <View style={styles.cardHeader}>
-            <Text style={[styles.cardTitle, { color: c.heading }]}>ICE 617</Text>
+            <DBText style={[styles.cardTitle, { color: c.heading }]}>ICE 617</DBText>
             <DBBadge semantic="successful" emphasis="strong">On time</DBBadge>
           </View>
-          <Text style={[styles.cardBody, { color: c.body }]}>Hamburg Hbf → Berlin Hbf · Departure 14:22</Text>
+          <DBText style={[styles.cardBody, { color: c.body }]}>Hamburg Hbf → Berlin Hbf · Departure 14:22</DBText>
         </DBCard>
         <DBCard>
           <View style={styles.cardHeader}>
-            <Text style={[styles.cardTitle, { color: c.heading }]}>RE 4</Text>
+            <DBText style={[styles.cardTitle, { color: c.heading }]}>RE 4</DBText>
             <DBBadge semantic="warning">5 min late</DBBadge>
           </View>
-          <Text style={[styles.cardBody, { color: c.body }]}>Dortmund → Aachen · Departure 14:35</Text>
+          <DBText style={[styles.cardBody, { color: c.body }]}>Dortmund → Aachen · Departure 14:35</DBText>
         </DBCard>
       </Section>
 
       <Section title="DBDivider">
-        <Text style={[styles.note, { color: c.subtle }]}>Horizontal (default)</Text>
+        <DBText style={[styles.note, { color: c.subtle }]}>Horizontal (default)</DBText>
         <DBDivider />
-        <Text style={[styles.note, { color: c.subtle }]}>Horizontal again</Text>
+        <DBText style={[styles.note, { color: c.subtle }]}>Horizontal again</DBText>
         <DBDivider />
         <View style={styles.verticalRow}>
-          <Text style={[styles.note, { color: c.subtle }]}>Left</Text>
+          <DBText style={[styles.note, { color: c.subtle }]}>Left</DBText>
           <DBDivider variant="vertical" />
-          <Text style={[styles.note, { color: c.subtle }]}>Right</Text>
+          <DBText style={[styles.note, { color: c.subtle }]}>Right</DBText>
         </View>
       </Section>
 

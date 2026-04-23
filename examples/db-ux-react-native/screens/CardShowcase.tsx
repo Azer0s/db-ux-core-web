@@ -1,13 +1,13 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { DBCard, DBBadge, DBButton } from "@db-ux/react-native-core-components";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { DBCard, DBBadge, DBButton , DBText } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: c.subtle }]}>{title}</Text>
+      <DBText style={[styles.sectionTitle, { color: c.subtle }]}>{title}</DBText>
       {children}
     </View>
   );
@@ -19,33 +19,33 @@ export default function CardShowcase() {
     <ScrollView contentContainerStyle={styles.container}>
       <Section title="Elevation levels">
         <DBCard elevationLevel="1">
-          <Text style={[styles.cardTitle, { color: c.heading }]}>Elevation 1</Text>
-          <Text style={[styles.cardBody, { color: c.body }]}>The default card level, sits on the page background.</Text>
+          <DBText style={[styles.cardTitle, { color: c.heading }]}>Elevation 1</DBText>
+          <DBText style={[styles.cardBody, { color: c.body }]}>The default card level, sits on the page background.</DBText>
         </DBCard>
         <DBCard elevationLevel="2">
-          <Text style={[styles.cardTitle, { color: c.heading }]}>Elevation 2</Text>
-          <Text style={[styles.cardBody, { color: c.body }]}>Slightly elevated, useful for grouped content.</Text>
+          <DBText style={[styles.cardTitle, { color: c.heading }]}>Elevation 2</DBText>
+          <DBText style={[styles.cardBody, { color: c.body }]}>Slightly elevated, useful for grouped content.</DBText>
         </DBCard>
         <DBCard elevationLevel="3">
-          <Text style={[styles.cardTitle, { color: c.heading }]}>Elevation 3</Text>
-          <Text style={[styles.cardBody, { color: c.body }]}>Highest elevation, for floating or modal-like cards.</Text>
+          <DBText style={[styles.cardTitle, { color: c.heading }]}>Elevation 3</DBText>
+          <DBText style={[styles.cardBody, { color: c.body }]}>Highest elevation, for floating or modal-like cards.</DBText>
         </DBCard>
       </Section>
 
       <Section title="Interactive card">
         <DBCard behavior="interactive" elevationLevel="1">
-          <Text style={[styles.cardTitle, { color: c.heading }]}>Tap me</Text>
-          <Text style={[styles.cardBody, { color: c.body }]}>Interactive cards respond to touch with a pressed state.</Text>
+          <DBText style={[styles.cardTitle, { color: c.heading }]}>Tap me</DBText>
+          <DBText style={[styles.cardBody, { color: c.body }]}>Interactive cards respond to touch with a pressed state.</DBText>
         </DBCard>
       </Section>
 
       <Section title="Card with rich content">
         <DBCard elevationLevel="2">
           <View style={styles.cardHeader}>
-            <Text style={[styles.cardTitle, { color: c.heading }]}>ICE 573 · Hamburg → Berlin</Text>
+            <DBText style={[styles.cardTitle, { color: c.heading }]}>ICE 573 · Hamburg → Berlin</DBText>
             <DBBadge semantic="successful">On time</DBBadge>
           </View>
-          <Text style={[styles.cardBody, { color: c.body }]}>Platform 7 · Departure 14:32 · Arrives 16:51</Text>
+          <DBText style={[styles.cardBody, { color: c.body }]}>Platform 7 · Departure 14:32 · Arrives 16:51</DBText>
           <View style={styles.cardFooter}>
             <DBButton variant="ghost">Details</DBButton>
             <DBButton>Book</DBButton>

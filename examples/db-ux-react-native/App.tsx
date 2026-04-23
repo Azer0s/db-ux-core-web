@@ -1,15 +1,5 @@
 import React, { useState } from "react";
-import {
-  Platform,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Platform, Pressable, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native";
 import { DBFontProvider, DBText, useDBFont } from "@db-ux/react-native-core-components";
 import BadgeShowcase from "./screens/BadgeShowcase";
 import ButtonShowcase from "./screens/ButtonShowcase";
@@ -105,9 +95,9 @@ function AppInner() {
           onPress={() => setColorScheme(isDark ? "light" : "dark")}
           accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
         >
-          <Text style={[styles.themeToggleIcon, { color: toggleTextColor }]}>
+          <DBText style={[styles.themeToggleIcon, { color: toggleTextColor }]}>
             {isDark ? "☀️" : "🌙"}
-          </Text>
+          </DBText>
         </Pressable>
       </View>
 

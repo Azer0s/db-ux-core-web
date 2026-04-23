@@ -1,5 +1,5 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import {
   DBLink,
   DBBrand,
@@ -7,14 +7,14 @@ import {
   DBNavigationItem,
   DBButton,
   DBDivider,
-} from "@db-ux/react-native-core-components";
+, DBText } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: c.muted }]}>{title}</Text>
+      <DBText style={[styles.sectionTitle, { color: c.muted }]}>{title}</DBText>
       {children}
     </View>
   );
@@ -24,7 +24,7 @@ export default function NavigationShowcase() {
   const c = useScreenColors();
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={[styles.heading, { color: c.heading }]}>Navigation</Text>
+      <DBText style={[styles.heading, { color: c.heading }]}>Navigation</DBText>
 
       <Section title="DBLink">
         <DBLink href="https://design-system.deutschebahn.com">DB Design System</DBLink>

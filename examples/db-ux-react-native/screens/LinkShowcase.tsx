@@ -1,13 +1,13 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { DBLink, DBDivider } from "@db-ux/react-native-core-components";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { DBLink, DBDivider , DBText } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: c.subtle }]}>{title}</Text>
+      <DBText style={[styles.sectionTitle, { color: c.subtle }]}>{title}</DBText>
       {children}
     </View>
   );
@@ -40,13 +40,13 @@ export default function LinkShowcase() {
       <DBDivider />
 
       <Section title="In context">
-        <Text style={[styles.bodyText, { color: c.body }]}>
+        <DBText style={[styles.bodyText, { color: c.body }]}>
           The DB UX Design System provides a comprehensive set of components for building
           consistent digital products. Learn more at the{" "}
           <DBLink variant="inline">design system documentation</DBLink>
           {" "}or explore the{" "}
           <DBLink variant="inline">component library on GitHub</DBLink>.
-        </Text>
+        </DBText>
       </Section>
 
       <DBDivider />
