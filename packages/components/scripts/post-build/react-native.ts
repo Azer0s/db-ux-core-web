@@ -1522,7 +1522,7 @@ function mkStyles(c: typeof DBTheme.light) {
     },
     brand: { marginRight: 12, flexShrink: 0 as const },
     navContainer: { flex: 1, overflow: "hidden" as const },
-    actions: { flexDirection: "row" as const, alignItems: "center" as const, gap: 4, flexShrink: 0 as const },
+    actions: { flexDirection: "row" as const, alignItems: "center" as const, gap: 4, flexShrink: 0 as const, marginLeft: 8 },
   };
 }
 
