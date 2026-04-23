@@ -1302,7 +1302,7 @@ function DBButtonFn(props: DBButtonProps, component: any) {
           style={[
             styles.label,
             (props.variant === "filled" || props.variant === "brand") && styles.labelInverted,
-            Boolean(props.disabled) && styles.labelDisabled,
+            Boolean(props.disabled) && !(props.variant === "filled" || props.variant === "brand") && styles.labelDisabled,
           ]}
         >
           {label}
@@ -1358,7 +1358,6 @@ export default DBCustomButton;
 	/* ---- DBHeader → SafeAreaView (built-in) ---- */
 	'header/header.tsx': `import React, { forwardRef } from "react";
 import { View, StatusBar } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
@@ -1369,7 +1368,6 @@ import { DBHeaderProps } from "./model";
 
 function mkStyles(c: typeof DBTheme.light) {
   return {
-    safeArea: { backgroundColor: c.bg },
     header: {
       flexDirection: "row" as const,
       alignItems: "center" as const,
@@ -1397,7 +1395,7 @@ function DBHeaderFn(props: DBHeaderProps, component: any) {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={{ backgroundColor: c.bg }}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <View style={styles.header} ref={component}>
         {props.brand && <View style={styles.brand}>{props.brand}</View>}
@@ -1418,7 +1416,7 @@ function DBHeaderFn(props: DBHeaderProps, component: any) {
         <View>{props.children}</View>
         {props.metaNavigation && <View>{props.metaNavigation}</View>}
       </DBDrawer>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -2620,7 +2618,7 @@ function DBCard(props: DBCardProps) {
   // Level 3 — white card, strong shadow (floating)
   const elevationMap = {
     "1": {
-      bg: c.bgSurface,
+      bg: c.bg,
       borderWidth: 1,    borderColor: c.border,
       shadowOpacity: 0,  shadowRadius: 0,  shadowOffset: { width: 0, height: 0 }, elevation: 0,
     },
