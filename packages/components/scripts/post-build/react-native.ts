@@ -1116,7 +1116,7 @@ function DBNavigationItem(props: DBNavigationItemProps) {
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
   const triggerRef = useRef<View>(null);
   const [visible, setVisible] = useState(false);
-  const [panels, setPanels] = useState<PanelLevel[]>([]);
+  const [panels, setPanels] = useState<PanelLevel[]>(() => []);
 
   const hasDropdown = Boolean(props.subNavigation);
   const isExpanded = props.subNavigationExpanded !== undefined
@@ -1200,7 +1200,7 @@ function DBNavigationItem(props: DBNavigationItemProps) {
       {hasDropdown && (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={close}>
           <Pressable style={StyleSheet.absoluteFillObject} onPress={close} />
-          {panels.map((panel, depth) => (
+          {(panels || []).map((panel, depth) => (
             <View
               key={depth}
               style={[styles.panel, {
