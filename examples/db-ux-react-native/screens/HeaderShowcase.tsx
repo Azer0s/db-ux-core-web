@@ -56,6 +56,33 @@ export default function HeaderShowcase() {
         </HeaderFrame>
       </Section>
 
+      <Section title="With navigation dropdowns">
+        <HeaderFrame>
+          <DBHeader brand={<DBBrand text="DB UX" />}>
+            <DBNavigation>
+              <DBNavigationItem label="Home" active />
+              <DBNavigationItem
+                label="Components"
+                subNavigation={<>
+                  <DBNavigationItem label="Button" onPress={() => {}} />
+                  <DBNavigationItem label="Badge" onPress={() => {}} />
+                  <DBNavigationItem label="Input" onPress={() => {}} />
+                  <DBNavigationItem label="Card" onPress={() => {}} />
+                </>}
+              />
+              <DBNavigationItem
+                label="Foundations"
+                subNavigation={<>
+                  <DBNavigationItem label="Colors" onPress={() => {}} />
+                  <DBNavigationItem label="Typography" onPress={() => {}} />
+                  <DBNavigationItem label="Spacing" onPress={() => {}} />
+                </>}
+              />
+            </DBNavigation>
+          </DBHeader>
+        </HeaderFrame>
+      </Section>
+
       <Section title="With actions">
         <HeaderFrame>
           <DBHeader
