@@ -1,5 +1,5 @@
 import React from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 import {
   DBLink,
   DBBrand,
@@ -40,24 +40,20 @@ export default function NavigationShowcase() {
       </Section>
 
       <Section title="DBNavigation + DBNavigationItem">
-        <View style={styles.navContainer}>
           <DBNavigation>
             <DBNavigationItem label="Home" active />
             <DBNavigationItem label="Components" />
             <DBNavigationItem label="Foundations" />
             <DBNavigationItem label="Guidelines" />
           </DBNavigation>
-        </View>
       </Section>
 
       <Section title="DBNavigationItem — States">
-        <View style={styles.navContainer}>
           <DBNavigation>
             <DBNavigationItem label="Active" active />
             <DBNavigationItem label="Default" />
             <DBNavigationItem label="Another" />
           </DBNavigation>
-        </View>
       </Section>
 
       <DBDivider />
@@ -81,12 +77,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13, fontWeight: "600",
     marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5,
-  },
-  navContainer: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#e1e2e6",
-    overflow: "hidden",
   },
   row: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 });

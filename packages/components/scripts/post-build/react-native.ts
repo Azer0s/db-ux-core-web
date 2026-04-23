@@ -1026,30 +1026,58 @@ const DBPage = forwardRef<View, DBPageProps>(DBPageFn);
 export default DBPage;
 `,
 
-	/* ---- DBNavigation → simple View container ---- */
+	/* ---- DBNavigation → themed horizontal scroll nav bar ---- */
 	'navigation/navigation.tsx': `import React from "react";
-import { View, StyleSheet } from "react-native";
-import DBText from "../text/text";
+import { View, ScrollView } from "react-native";
+import { useDBFont } from "../../providers/font-provider";
+import { DBTheme } from "../../shared/tokens";
 
 export type DBNavigationExtraProps = {
   children?: React.ReactNode;
   style?: any;
+  direction?: "horizontal" | "vertical";
 };
 
 function DBNavigation(props: DBNavigationExtraProps) {
-  return <View style={[styles.container, props.style]}>{props.children}</View>;
-}
+  const { isDark } = useDBFont();
+  const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
+  const isVertical = props.direction === "vertical";
 
-const styles = StyleSheet.create({
-  container: { flexDirection: "row", flexWrap: "wrap" }
-});
+  const containerStyle = {
+    backgroundColor: c.bg,
+    borderBottomWidth: isVertical ? 0 : 1,
+    borderBottomColor: c.border,
+    borderRightWidth: isVertical ? 1 : 0,
+    borderRightColor: c.border,
+  };
+
+  if (isVertical) {
+    return (
+      <View style={[containerStyle, { paddingVertical: 4 }, props.style]}>
+        {props.children}
+      </View>
+    );
+  }
+
+  return (
+    <View style={[containerStyle, props.style]}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 4 }}
+      >
+        {props.children}
+      </ScrollView>
+    </View>
+  );
+}
 
 export default DBNavigation;
 `,
 
-	/* ---- DBNavigationItem → simple View item ---- */
+	/* ---- DBNavigationItem → styled pressable nav item ---- */
 	'navigation-item/navigation-item.tsx': `import React from "react";
-import { Pressable } from "react-native";
+import { Pressable, StyleSheet } from "react-native";
 import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
@@ -1061,32 +1089,43 @@ export type DBNavigationItemProps = {
   children?: React.ReactNode;
 };
 
-function mkStyles(c: typeof DBTheme.light) {
-  return {
-    item: { paddingHorizontal: 12, paddingVertical: 8 },
-    itemActive: { borderBottomWidth: 2, borderBottomColor: c.brandPrimary },
-    label: { fontSize: 14, color: c.text },
-    labelActive: { color: c.brandPrimary, fontWeight: "700" as const },
-  };
-}
-
 function DBNavigationItem(props: DBNavigationItemProps) {
   const { isDark } = useDBFont();
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
 
-  const styles = mkStyles(c);
   return (
     <Pressable
-      style={({ pressed }) => [styles.item, props.active && styles.itemActive, pressed && { opacity: 0.7 }]}
+      style={({ pressed }) => [
+        styles.item,
+        props.active
+          ? { borderBottomColor: c.brandPrimary }
+          : { borderBottomColor: "transparent" },
+        pressed && { backgroundColor: c.bgSurface },
+      ]}
       onPress={props.onPress}
       accessibilityRole="menuitem"
+      accessibilityState={{ selected: props.active }}
     >
       {props.label ? (
-        <DBText style={[styles.label, props.active && styles.labelActive]}>{props.label}</DBText>
+        <DBText
+          weight={props.active ? "bold" : "regular"}
+          style={{ color: props.active ? c.brandText : c.textMuted }}
+        >
+          {props.label}
+        </DBText>
       ) : props.children}
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  item: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 9,
+    borderBottomWidth: 3,
+  },
+});
 
 export default DBNavigationItem;
 `,
@@ -2515,8 +2554,7 @@ export default DBBadge;
 `,
 
   'brand/brand.tsx': `import React from "react";
-import { View, StyleSheet } from "react-native";
-import DBText from "../text/text";
+import { View, Text, StyleSheet } from "react-native";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
 import type { DBBrandProps } from "./model";
@@ -2527,14 +2565,14 @@ function DBBrand(props: DBBrandProps) {
 
   return (
     <View style={styles.container}>
-      {/* DB logo badge: red square with "db" lettering */}
+      {/* Red DB logo badge — uses bare Text to avoid font-injection colour fights */}
       <View style={styles.logoBadge}>
-        <DBText style={styles.logoText}>db</DBText>
+        <Text style={styles.logoText} allowFontScaling={false}>db</Text>
       </View>
       {props.text && (
         <>
           <View style={[styles.separator, { backgroundColor: c.border }]} />
-          <DBText style={[styles.productName, { color: c.text }]}>{props.text}</DBText>
+          <Text style={[styles.productName, { color: c.text }]} allowFontScaling={false}>{props.text}</Text>
         </>
       )}
       {!props.text && props.children}
@@ -2545,21 +2583,23 @@ function DBBrand(props: DBBrandProps) {
 const styles = StyleSheet.create({
   container: { flexDirection: "row", alignItems: "center", gap: 10 },
   logoBadge: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     borderRadius: 6,
     backgroundColor: "#ec0016",
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
   logoText: {
     color: "#ffffff",
-    fontSize: 15,
-    fontWeight: "900",
+    fontSize: 17,
+    fontWeight: "800",
     letterSpacing: -0.5,
-    lineHeight: 18,
+    includeFontPadding: false,
+    textAlignVertical: "center",
   },
-  separator: { width: 1, height: 24 },
+  separator: { width: 1, height: 26, flexShrink: 0 },
   productName: { fontSize: 16, fontWeight: "600", letterSpacing: -0.2 },
 });
 
@@ -2578,16 +2618,33 @@ function DBCard(props: DBCardProps) {
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
   const level = String(props.elevationLevel ?? "1") as "1" | "2" | "3";
 
+  // Level 1 — flat surface with border (clearly embedded, no shadow)
+  // Level 2 — white card, moderate shadow (raised)
+  // Level 3 — white card, strong shadow (floating)
   const elevationMap = {
-    "1": { bg: c.bg,          shadowOpacity: 0.06, shadowRadius: 2,  shadowOffset: { width: 0, height: 1 }, elevation: 1 },
-    "2": { bg: c.bgSurface,   shadowOpacity: 0.13, shadowRadius: 6,  shadowOffset: { width: 0, height: 3 }, elevation: 4 },
-    "3": { bg: c.bgElevated,  shadowOpacity: 0.22, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
+    "1": {
+      bg: c.bgSurface,
+      borderWidth: 1,    borderColor: c.border,
+      shadowOpacity: 0,  shadowRadius: 0,  shadowOffset: { width: 0, height: 0 }, elevation: 0,
+    },
+    "2": {
+      bg: c.bg,
+      borderWidth: 0,    borderColor: "transparent" as const,
+      shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 6,
+    },
+    "3": {
+      bg: c.bg,
+      borderWidth: 0,    borderColor: "transparent" as const,
+      shadowOpacity: 0.30, shadowRadius: 28, shadowOffset: { width: 0, height: 12 }, elevation: 12,
+    },
   };
   const e = elevationMap[level] ?? elevationMap["1"];
 
   const cardStyle = {
     backgroundColor: e.bg,
     borderRadius: DBBorderRadius.md,
+    borderWidth: e.borderWidth,
+    borderColor: e.borderColor,
     padding: DBSpacing.md,
     marginVertical: DBSpacing.xs,
     shadowColor: c.shadowColor,
