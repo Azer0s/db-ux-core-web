@@ -2719,11 +2719,14 @@ function DBIconToggle({ options, value, onChange }: DBIconToggleProps) {
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 4,
-      onPanResponderGrant: () => {
+      onStartShouldSetPanResponder: () => false,
+      // Capture horizontal drags even if a child Pressable already holds the touch
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > Math.abs(g.dy) && Math.abs(g.dx) > 3,
+      onMoveShouldSetPanResponderCapture: (_, g) => Math.abs(g.dx) > Math.abs(g.dy) && Math.abs(g.dx) > 3,
+      onPanResponderGrant: (_, g) => {
+        // g.dx may already be non-zero (captured mid-move), compensate so the pill starts at its resting position
+        dragStartX.current = PAD + currentIdx.current * ITEM_W - g.dx;
         anim.stopAnimation();
-        dragStartX.current = PAD + currentIdx.current * ITEM_W;
       },
       onPanResponderMove: (_, g) => {
         const newX = Math.max(PAD, Math.min(PAD + (count - 1) * ITEM_W, dragStartX.current + g.dx));
