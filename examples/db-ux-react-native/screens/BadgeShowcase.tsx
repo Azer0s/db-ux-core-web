@@ -1,6 +1,7 @@
 import React from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { DBBadge ,
+import {
+  DBBadge,
   DBText,
 } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";

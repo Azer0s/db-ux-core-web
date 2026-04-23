@@ -1,6 +1,7 @@
 import React from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { DBLink, DBDivider ,
+import {
+  DBLink, DBDivider,
   DBText,
 } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";
@@ -19,6 +20,7 @@ export default function LinkShowcase() {
   const c = useScreenColors();
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <DBText style={[styles.heading, { color: c.heading }]}>DBLink</DBText>
       <Section title="Variants">
         <DBLink variant="adaptive">Adaptive link (follows brand color)</DBLink>
         <DBLink variant="brand">Brand link (always red)</DBLink>
@@ -62,6 +64,7 @@ export default function LinkShowcase() {
 }
 
 const styles = StyleSheet.create({
+  heading: { fontSize: 24, fontWeight: "700", marginBottom: 16 },
   container: { padding: 16, gap: 24 },
   section: { gap: 12 },
   sectionTitle: { fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },

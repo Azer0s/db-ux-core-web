@@ -7,7 +7,6 @@ import {
   DBTabPanel,
   DBBadge,
   DBButton,
-,
   DBText,
 } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";
@@ -94,7 +93,7 @@ export default function TabsShowcase() {
               key={day}
               label={day}
               active={i === 2}
-              onChange={() => {}}
+              onChange={() => { }}
             />
           ))}
         </DBTabList>

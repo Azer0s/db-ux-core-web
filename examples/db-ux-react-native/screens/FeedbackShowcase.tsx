@@ -4,25 +4,27 @@ import {
   DBNotification,
   DBInfotext,
   DBTag,
-,
   DBText,
 } from "@db-ux/react-native-core-components";
+import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const c = useScreenColors();
   return (
     <View style={styles.section}>
-      <DBText style={styles.sectionTitle}>{title}</DBText>
+      <DBText style={[styles.sectionTitle, { color: c.muted }]}>{title}</DBText>
       {children}
     </View>
   );
 }
 
 export default function FeedbackShowcase() {
+  const c = useScreenColors();
   const [tags, setTags] = useState(["Design System", "React Native", "DB UX", "Expo"]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <DBText style={styles.heading}>Feedback</DBText>
+      <DBText style={[styles.heading, { color: c.heading }]}>Feedback</DBText>
 
       <Section title="DBNotification — Semantics">
         <DBNotification headline="Adaptive" text="This is a neutral notification." />

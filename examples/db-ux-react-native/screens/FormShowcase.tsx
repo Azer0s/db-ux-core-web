@@ -7,7 +7,6 @@ import {
   DBSelect,
   DBTextarea,
   DBButton,
-,
   DBText,
 } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";

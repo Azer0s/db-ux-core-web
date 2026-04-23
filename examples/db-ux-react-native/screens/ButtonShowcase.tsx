@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { DBButton,
+import {
+  DBButton,
   DBText,
 } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";

@@ -7,7 +7,6 @@ import {
   DBAccordion,
   DBButton,
   DBBadge,
-,
   DBText,
 } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";

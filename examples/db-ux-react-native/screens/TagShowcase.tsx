@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { DBTag ,
+import {
+  DBTag,
   DBText,
 } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";
@@ -27,6 +28,7 @@ export default function TagShowcase() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <DBText style={[styles.heading, { color: c.heading }]}>DBTag</DBText>
       <Section title="Weak emphasis (default)">
         <Row>
           {SEMANTICS.map((sem) => (
@@ -83,6 +85,7 @@ export default function TagShowcase() {
 }
 
 const styles = StyleSheet.create({
+  heading: { fontSize: 24, fontWeight: "700", marginBottom: 16 },
   container: { padding: 16, gap: 24 },
   section: { gap: 12 },
   sectionTitle: { fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },

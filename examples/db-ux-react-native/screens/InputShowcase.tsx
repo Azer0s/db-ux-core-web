@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { DBInput, DBButton ,
+import {
+  DBInput, DBButton,
   DBText,
 } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";
@@ -90,8 +91,8 @@ export default function InputShowcase() {
               ? !email
                 ? "invalid"
                 : email.includes("@")
-                ? "valid"
-                : "invalid"
+                  ? "valid"
+                  : "invalid"
               : undefined
           }
           validMessage="Valid email!"

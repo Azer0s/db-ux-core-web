@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { DBTooltip, DBPopover, DBButton, DBBadge, DBCard,
+import {
+  DBTooltip, DBPopover, DBButton, DBBadge, DBCard,
   DBText,
 } from "@db-ux/react-native-core-components";
+import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -14,11 +16,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export default function OverlayShowcase() {
+  const c = useScreenColors();
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [popoverInfoOpen, setPopoverInfoOpen] = useState(false);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <DBText style={[styles.heading, { color: c.heading }]}>Tooltips &amp; Popovers</DBText>
       <Section title="Tooltip — description">
         <View style={styles.row}>
           <DBTooltip variant="description">
@@ -82,6 +86,7 @@ export default function OverlayShowcase() {
 }
 
 const styles = StyleSheet.create({
+  heading: { fontSize: 24, fontWeight: "700", marginBottom: 16 },
   container: { padding: 16, gap: 24 },
   section: { gap: 12 },
   sectionTitle: { fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },

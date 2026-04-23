@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { DBDrawer, DBButton, DBCard ,
+import {
+  DBDrawer, DBButton, DBCard,
   DBText,
 } from "@db-ux/react-native-core-components";
 import { useScreenColors } from "./theme";
@@ -23,6 +24,7 @@ export default function DrawerShowcase() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <DBText style={[styles.heading, { color: c.heading }]}>DBDrawer</DBText>
       <Section title="Direction">
         <View style={styles.row}>
           <DBButton onClick={() => setOpenLeft(true)}>Open left</DBButton>
@@ -90,6 +92,7 @@ export default function DrawerShowcase() {
 }
 
 const styles = StyleSheet.create({
+  heading: { fontSize: 24, fontWeight: "700", marginBottom: 16 },
   container: { padding: 16, gap: 24 },
   section: { gap: 12 },
   sectionTitle: { fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },

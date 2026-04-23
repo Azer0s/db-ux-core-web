@@ -1,8 +1,10 @@
 import React from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { DBStack, DBButton, DBDivider,
+import {
+  DBStack, DBButton, DBDivider,
   DBText,
 } from "@db-ux/react-native-core-components";
+import { useScreenColors } from "./theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -22,8 +24,10 @@ function Box({ label, color = "#e1e2e6" }: { label: string; color?: string }) {
 }
 
 export default function StackShowcase() {
+  const c = useScreenColors();
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <DBText style={[styles.heading, { color: c.heading }]}>DBStack</DBText>
       <Section title="Column (default)">
         <DBStack direction="column" gap="small">
           <Box label="Item 1" />
@@ -89,6 +93,7 @@ export default function StackShowcase() {
 }
 
 const styles = StyleSheet.create({
+  heading: { fontSize: 24, fontWeight: "700", marginBottom: 16 },
   container: { padding: 16, gap: 24 },
   section: { gap: 12 },
   sectionTitle: { marginBottom: 4 },
