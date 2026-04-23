@@ -2714,6 +2714,12 @@ function DBIconToggle({ options, value, onChange }: DBIconToggleProps) {
   const currentIdx = useRef(selectedIdx);
   const dragStartX = useRef(PAD + selectedIdx * ITEM_W);
 
+  // Always-current refs so PanResponder (created once) never uses stale closures
+  const onChangeRef = useRef(onChange);
+  const optionsRef  = useRef(options);
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+  useEffect(() => { optionsRef.current  = options;  }, [options]);
+
   const anim = useRef(new Animated.Value(PAD + selectedIdx * ITEM_W)).current;
 
   useEffect(() => {
@@ -2736,17 +2742,19 @@ function DBIconToggle({ options, value, onChange }: DBIconToggleProps) {
       onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > Math.abs(g.dy) && Math.abs(g.dx) > 3,
       onMoveShouldSetPanResponderCapture: (_, g) => Math.abs(g.dx) > Math.abs(g.dy) && Math.abs(g.dx) > 3,
       onPanResponderGrant: (_, g) => {
-        // g.dx may already be non-zero (captured mid-move), compensate so the pill starts at its resting position
+        // g.dx may already be non-zero (captured mid-move), compensate so pill starts at rest position
         dragStartX.current = PAD + currentIdx.current * ITEM_W - g.dx;
         anim.stopAnimation();
       },
       onPanResponderMove: (_, g) => {
-        const newX = Math.max(PAD, Math.min(PAD + (count - 1) * ITEM_W, dragStartX.current + g.dx));
+        const cnt = optionsRef.current.length;
+        const newX = Math.max(PAD, Math.min(PAD + (cnt - 1) * ITEM_W, dragStartX.current + g.dx));
         anim.setValue(newX);
       },
       onPanResponderRelease: (_, g) => {
+        const cnt = optionsRef.current.length;
         const rawX = dragStartX.current + g.dx - PAD;
-        const nearestIdx = Math.max(0, Math.min(count - 1, Math.round(rawX / ITEM_W)));
+        const nearestIdx = Math.max(0, Math.min(cnt - 1, Math.round(rawX / ITEM_W)));
         Animated.spring(anim, {
           toValue: PAD + nearestIdx * ITEM_W,
           useNativeDriver: false,
@@ -2754,7 +2762,7 @@ function DBIconToggle({ options, value, onChange }: DBIconToggleProps) {
           friction: 24,
         }).start();
         if (nearestIdx !== currentIdx.current) {
-          onChange(options[nearestIdx].value);
+          onChangeRef.current(optionsRef.current[nearestIdx].value);
         }
       },
       onPanResponderTerminate: () => {
