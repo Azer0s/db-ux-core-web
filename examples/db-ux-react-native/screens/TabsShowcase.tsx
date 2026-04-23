@@ -98,6 +98,22 @@ export default function TabsShowcase() {
           ))}
         </DBTabList>
       </Section>
+
+      <Section title="Full — alignment: start">
+        <DBTabList width="full" alignment="start">
+          {["Train", "Bus", "Bike"].map((label, i) => (
+            <DBTabItem key={label} label={label} active={i === 0} onChange={() => { }} />
+          ))}
+        </DBTabList>
+      </Section>
+
+      <Section title="Full — alignment: center">
+        <DBTabList width="full" alignment="center">
+          {["Train", "Bus", "Bike"].map((label, i) => (
+            <DBTabItem key={label} label={label} active={i === 1} onChange={() => { }} />
+          ))}
+        </DBTabList>
+      </Section>
     </ScrollView>
   );
 }

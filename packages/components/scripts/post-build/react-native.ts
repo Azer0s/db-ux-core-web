@@ -1707,7 +1707,6 @@ import { DBTooltipProps } from "./model";
 type Placement = "top" | "bottom" | "left" | "right";
 
 const TIP_W = 220;
-const TIP_H = 72;
 
 function extractText(node: any): string {
   if (typeof node === "string") return node;
@@ -1724,6 +1723,8 @@ function DBTooltipFn(props: DBTooltipProps, component: any) {
   const [visible, setVisible] = useState(false);
   const triggerRef = useRef<View>(null);
   const [pos, setPos] = useState({ x: 0, y: 0, w: 0, h: 0 });
+  // Actual measured tooltip height — starts at 0 so first layout fires reposition
+  const [tipH, setTipH] = useState(0);
 
   const childArray = React.Children.toArray(props.children);
   const trigger = childArray[0];
@@ -1744,8 +1745,7 @@ function DBTooltipFn(props: DBTooltipProps, component: any) {
       : setVisible(true);
   }
 
-  // Inject the show handler into the trigger so it fires even when the trigger
-  // is a Pressable/Button that claims the touch before the parent can.
+  // Strategy A: inject onPress/onClick for interactive children (DBButton etc.)
   const triggerWithHandler = React.isValidElement(trigger)
     ? React.cloneElement(trigger as React.ReactElement<any>, {
         onPress: (e: any) => {
@@ -1762,35 +1762,39 @@ function DBTooltipFn(props: DBTooltipProps, component: any) {
 
   const placement: Placement = ((props as any).placement ?? "bottom") as Placement;
   const { width: winW } = Dimensions.get("window");
-  const GAP = 8;
+  const GAP = 6;
 
-  function positionStyle() {
-    const { x, y, w, h } = pos;
+  function positionStyle(measuredH: number) {
+    const h = measuredH || 36; // sensible fallback before first layout
+    const { x, y, w } = pos;
     const cx = x + w / 2;
     const left = Math.max(8, Math.min(cx - TIP_W / 2, winW - TIP_W - 8));
     switch (placement) {
       case "top":
-        return { top: Math.max(8, y - TIP_H - GAP), left };
+        return { top: Math.max(8, pos.y - h - GAP), left };
       case "left":
-        return { top: Math.max(8, y + h / 2 - TIP_H / 2), right: winW - x + GAP, maxWidth: TIP_W };
+        return { top: Math.max(8, pos.y + pos.h / 2 - h / 2), right: winW - x + GAP, maxWidth: TIP_W };
       case "right":
-        return { top: Math.max(8, y + h / 2 - TIP_H / 2), left: x + w + GAP, maxWidth: TIP_W };
+        return { top: Math.max(8, pos.y + pos.h / 2 - h / 2), left: x + w + GAP, maxWidth: TIP_W };
       default:
-        return { top: y + h + GAP, left };
+        return { top: pos.y + pos.h + GAP, left };
     }
   }
 
   return (
     <View style={styles.container} ref={component}>
-      {/* Wrapper gives us a reliable measureInWindow target */}
-      <View ref={triggerRef}>
-        {triggerWithHandler}
-      </View>
+      {/* Strategy B: outer Pressable for non-interactive children (DBBadge etc.) */}
+      <Pressable onPress={show}>
+        <View ref={triggerRef} pointerEvents="box-none">
+          {triggerWithHandler}
+        </View>
+      </Pressable>
       {rawContent ? (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
           <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setVisible(false)}>
             <View
-              style={[styles.tooltip, { backgroundColor: c.text, shadowColor: "#000" }, positionStyle()]}
+              style={[styles.tooltip, { backgroundColor: c.text, shadowColor: "#000" }, positionStyle(tipH)]}
+              onLayout={(e) => setTipH(e.nativeEvent.layout.height)}
               pointerEvents="none"
             >
               <DBText style={[styles.tooltipText, { color: c.bg }]}>{rawContent}</DBText>
@@ -2045,17 +2049,20 @@ import { DBSimpleTabProps, DBTabsProps } from "./model";
 function mkStyles(c: typeof DBTheme.light) {
   return {
     container: { flex: 1 },
-    tabBarH: { flexDirection: "row" as const, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
+    tabBarH: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
     tabBarV: { flexDirection: "column" as const, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: c.border },
+    tabBarHRow: { flexDirection: "row" as const },
     tab: {
       paddingHorizontal: 16,
       paddingVertical: 12,
       borderBottomWidth: 2,
       borderBottomColor: "transparent",
     },
+    tabFull: { flex: 1 },
     tabActive: { borderBottomColor: c.brandPrimary },
     tabText: { fontSize: 14, color: c.textMuted },
     tabTextActive: { color: c.text, fontWeight: "600" as const },
+    tabTextCenter: { textAlign: "center" as const },
     panel: { flex: 1, padding: 12 },
   };
 }
@@ -2074,6 +2081,8 @@ function DBTabsFn(props: DBTabsProps, component: any) {
   })();
 
   const isHorizontal = !props.orientation || props.orientation === "horizontal";
+  const isFull = (props as any).width === "full";
+  const alignment: "start" | "center" = (props as any).alignment ?? "start";
 
   function handleTabPress(index: number) {
     setSelectedIndex(index);
@@ -2083,32 +2092,49 @@ function DBTabsFn(props: DBTabsProps, component: any) {
 
   const styles = mkStyles(c);
 
+  const tabItems = tabs.map((tab, index) => (
+    <Pressable
+      key={String(props.name ?? uuid) + index}
+      style={({ pressed }) => [
+        styles.tab,
+        isFull && styles.tabFull,
+        selectedIndex === index && styles.tabActive,
+        pressed && { opacity: 0.7 },
+      ]}
+      onPress={() => handleTabPress(index)}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: selectedIndex === index }}
+    >
+      <DBText style={[
+        styles.tabText,
+        selectedIndex === index && styles.tabTextActive,
+        alignment === "center" && styles.tabTextCenter,
+      ]}>
+        {tab.label}
+      </DBText>
+    </Pressable>
+  ));
+
   return (
     <View style={styles.container} ref={component}>
-      <ScrollView
-        horizontal={isHorizontal}
-        style={isHorizontal ? styles.tabBarH : styles.tabBarV}
-        showsHorizontalScrollIndicator={false}
-      >
-        {tabs.map((tab, index) => (
-          <Pressable
-            key={String(props.name ?? uuid) + index}
-            style={({ pressed }) => [
-              styles.tab,
-              selectedIndex === index && styles.tabActive,
-              pressed && { opacity: 0.7 },
-            ]}
-            onPress={() => handleTabPress(index)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: selectedIndex === index }}
+      <View style={styles.tabBarH}>
+        {isFull ? (
+          <View style={styles.tabBarHRow}>
+            {tabItems}
+            {props.children}
+          </View>
+        ) : (
+          <ScrollView
+            horizontal={isHorizontal}
+            contentContainerStyle={isHorizontal ? styles.tabBarHRow : undefined}
+            style={!isHorizontal ? styles.tabBarV : undefined}
+            showsHorizontalScrollIndicator={false}
           >
-            <DBText style={[styles.tabText, selectedIndex === index && styles.tabTextActive]}>
-              {tab.label}
-            </DBText>
-          </Pressable>
-        ))}
-        {props.children}
-      </ScrollView>
+            {tabItems}
+            {props.children}
+          </ScrollView>
+        )}
+      </View>
       {tabs[selectedIndex] && (
         <View style={styles.panel}>
           {tabs[selectedIndex].content
@@ -3329,15 +3355,25 @@ import type { DBTabListProps } from "./model";
 function DBTabList(props: DBTabListProps) {
   const { isDark } = useDBFont();
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
+  const isFull = (props as any).width === "full";
+  const alignment: "start" | "center" = (props as any).alignment ?? "start";
+
+  // Inject _full and _alignment into direct DBTabItem children
+  const children = React.Children.map(props.children, (child) =>
+    React.isValidElement(child)
+      ? React.cloneElement(child as React.ReactElement<any>, { _full: isFull, _alignment: alignment })
+      : child
+  );
+
   return (
     <View style={[styles.container, { borderBottomColor: c.border }]}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.content}
-      >
-        {props.children}
-      </ScrollView>
+      {isFull ? (
+        <View style={styles.fullRow}>{children}</View>
+      ) : (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.content}>
+          {children}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -3345,6 +3381,7 @@ function DBTabList(props: DBTabListProps) {
 const styles = StyleSheet.create({
   container: { borderBottomWidth: StyleSheet.hairlineWidth, width: "100%" },
   content: { flexDirection: "row", alignItems: "stretch" },
+  fullRow: { flexDirection: "row" },
 });
 
 export default DBTabList;
@@ -3361,10 +3398,14 @@ function DBTabItem(props: DBTabItemProps) {
   const { isDark } = useDBFont();
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
   const selected = Boolean(props.active);
+  const isFull = Boolean((props as any)._full);
+  const alignment: "start" | "center" = (props as any)._alignment ?? "start";
+
   return (
     <Pressable
       style={({ pressed }) => [
         styles.item,
+        isFull && styles.itemFull,
         selected ? { borderBottomColor: c.brandPrimary } : { borderBottomColor: "transparent" },
         pressed && { opacity: 0.75 },
       ]}
@@ -3375,7 +3416,12 @@ function DBTabItem(props: DBTabItemProps) {
       accessibilityRole="tab"
       accessibilityState={{ selected }}
     >
-      <DBText style={[styles.label, { color: selected ? c.text : c.textMuted }, selected && styles.labelSelected]}>
+      <DBText style={[
+        styles.label,
+        { color: selected ? c.text : c.textMuted },
+        selected && styles.labelSelected,
+        alignment === "center" && styles.labelCenter,
+      ]}>
         {props.label ?? props.children}
       </DBText>
     </Pressable>
@@ -3389,8 +3435,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     marginRight: 4,
   },
+  itemFull: { flex: 1, marginRight: 0 },
   label: { fontSize: DBTypography.sizeSM },
   labelSelected: { fontWeight: "bold" },
+  labelCenter: { textAlign: "center" },
 });
 
 export default DBTabItem;
