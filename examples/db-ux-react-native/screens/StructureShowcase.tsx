@@ -23,9 +23,9 @@ function Demo({ label, density, spacing, width }: { label: string; density?: Den
     <View style={styles.demo}>
       <DBText style={[styles.demoLabel, { color: c.muted }]}>{label}</DBText>
       <DBSection density={density} spacing={spacing} width={width}>
-        <SimpleCard label="Card A" />
-        <SimpleCard label="Card B" />
-        <SimpleCard label="Card C" />
+        <SimpleCard label="A" />
+        <SimpleCard label="B" />
+        <SimpleCard label="C" />
       </DBSection>
     </View>
   );
@@ -37,26 +37,25 @@ export default function StructureShowcase() {
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: c.bg }]}>
       <DBText style={[styles.heading, { color: c.heading }]}>DBSection</DBText>
 
-      <DBText style={[styles.group, { color: c.heading }]}>width (size of section)</DBText>
-      <Demo label="small" width="small" spacing="medium" density="regular" />
-      <Demo label="medium" width="medium" spacing="medium" density="regular" />
-      <Demo label="large" width="large" spacing="medium" density="regular" />
-      <Demo label="full" width="full" spacing="medium" density="regular" />
-
-      <DBDivider style={{ marginVertical: 20 }} />
-
-      <DBText style={[styles.group, { color: c.heading }]}>spacing (outer padding)</DBText>
-      <Demo label="none" width="full" spacing="none" density="regular" />
-      <Demo label="small" width="full" spacing="small" density="regular" />
-      <Demo label="medium" width="full" spacing="medium" density="regular" />
-      <Demo label="large" width="full" spacing="large" density="regular" />
+      <DBText style={[styles.group, { color: c.heading }]}>width (card width)</DBText>
+      <Demo label="small (80px)" width="small" spacing="medium" density="regular" />
+      <Demo label="medium (120px)" width="medium" spacing="medium" density="regular" />
+      <Demo label="large (180px)" width="large" spacing="medium" density="regular" />
 
       <DBDivider style={{ marginVertical: 20 }} />
 
       <DBText style={[styles.group, { color: c.heading }]}>density (gap between cards)</DBText>
-      <Demo label="functional (tight)" width="full" spacing="medium" density="functional" />
-      <Demo label="regular" width="full" spacing="medium" density="regular" />
-      <Demo label="expressive (loose)" width="full" spacing="medium" density="expressive" />
+      <Demo label="functional (tight, 8px)" width="medium" spacing="medium" density="functional" />
+      <Demo label="regular (16px)" width="medium" spacing="medium" density="regular" />
+      <Demo label="expressive (loose, 24px)" width="medium" spacing="medium" density="expressive" />
+
+      <DBDivider style={{ marginVertical: 20 }} />
+
+      <DBText style={[styles.group, { color: c.heading }]}>spacing (padding around cards)</DBText>
+      <Demo label="none (0px)" width="medium" spacing="none" density="regular" />
+      <Demo label="small (16px)" width="medium" spacing="small" density="regular" />
+      <Demo label="medium (32px)" width="medium" spacing="medium" density="regular" />
+      <Demo label="large (48px)" width="medium" spacing="large" density="regular" />
 
       <DBDivider style={{ marginVertical: 20 }} />
 
@@ -81,7 +80,7 @@ const styles = StyleSheet.create({
   container: { paddingBottom: 48 },
   heading: { fontSize: 24, fontWeight: "700", marginTop: 16, marginBottom: 8, paddingHorizontal: 20 },
   group: { fontSize: 17, fontWeight: "600", marginBottom: 8, paddingHorizontal: 20 },
-  demo: { marginBottom: 4 },
-  demoLabel: { fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.6, paddingHorizontal: 20, marginBottom: 2 },
+  demo: { marginBottom: 4, paddingHorizontal: 20 },
+  demoLabel: { fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 },
   verticalRow: { flexDirection: "row", alignItems: "center", gap: 12 },
 });

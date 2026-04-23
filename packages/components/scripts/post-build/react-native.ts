@@ -3183,7 +3183,7 @@ function DBCard(props: DBCardProps) {
   if (props.onClick || (props as any).behavior === "interactive") {
     return (
       <Pressable
-        style={({ pressed }) => [cardStyle, pressed && { opacity: 0.92 }]}
+        style={({ pressed }) => [cardStyle, (props as any).style, pressed && { opacity: 0.92 }]}
         onPress={props.onClick as any}
         accessibilityRole="button"
       >
@@ -3191,7 +3191,7 @@ function DBCard(props: DBCardProps) {
       </Pressable>
     );
   }
-  return <View style={cardStyle}>{props.children}</View>;
+  return <View style={[cardStyle, (props as any).style]}>{props.children}</View>;
 }
 
 export default DBCard;
@@ -3337,19 +3337,19 @@ import { View } from "react-native";
 import { useDBFont } from "../../providers/font-provider";
 import type { DBSectionProps } from "./model";
 
-// spacing = outer padding around the card block
+// spacing = padding around the card group (determines how big the blue area is)
 const SPACING_PAD: Record<string, number> = {
   none: 0, small: 16, medium: 32, large: 48,
 };
 
-// density = gap between child cards
+// density = gap between cards
 const DENSITY_GAP: Record<string, number> = {
   functional: 8, regular: 16, expressive: 24,
 };
 
-// width = max-width of the section itself (centers itself when not full)
-const WIDTH_MAP: Record<string, number | "100%"> = {
-  small: 240, medium: 320, large: 420, full: "100%",
+// width = width of each individual card
+const CARD_WIDTH: Record<string, number | "100%"> = {
+  small: 80, medium: 120, large: 180, full: "100%",
 };
 
 function DBSection(props: DBSectionProps) {
@@ -3357,26 +3357,29 @@ function DBSection(props: DBSectionProps) {
   const sectionBg = isDark ? "#062736" : "#ebf5fe";
   const spacing: string = (props as any).spacing ?? "medium";
   const density: string = (props as any).density ?? "regular";
-  const widthKey: string = (props as any).width ?? "full";
+  const widthKey: string = (props as any).width ?? "medium";
 
-  const pad = SPACING_PAD[spacing] ?? SPACING_PAD.medium;
-  const gap = DENSITY_GAP[density] ?? DENSITY_GAP.regular;
-  const sectionWidth = WIDTH_MAP[widthKey] ?? "100%";
+  const pad = SPACING_PAD[spacing] ?? 32;
+  const gap = DENSITY_GAP[density] ?? 16;
+  const cardW = CARD_WIDTH[widthKey] ?? 120;
+
+  // Inject width into each child card
+  const styledChildren = React.Children.map(props.children, (child) => {
+    if (!React.isValidElement(child)) return child;
+    return React.cloneElement(child as React.ReactElement<any>, {
+      style: [{ width: cardW }, (child.props as any).style],
+    });
+  });
 
   return (
     <View
       style={[
-        {
-          padding: pad,
-          width: sectionWidth,
-          alignSelf: "center",
-          backgroundColor: sectionBg,
-        },
+        { padding: pad, backgroundColor: sectionBg },
         (props as any).style,
       ]}
     >
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap }}>
-        {props.children}
+        {styledChildren}
       </View>
     </View>
   );
