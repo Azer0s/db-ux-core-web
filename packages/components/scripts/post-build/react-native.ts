@@ -3347,9 +3347,9 @@ const DENSITY_GAP: Record<string, number> = {
   functional: 8, regular: 16, expressive: 24,
 };
 
-// width = width of each individual card
-const CARD_WIDTH: Record<string, number | "100%"> = {
-  small: 80, medium: 120, large: 180, full: "100%",
+// width = flex scale for each card (small=1, medium=2, large=3, full=stretch)
+const CARD_FLEX: Record<string, number> = {
+  small: 1, medium: 2, large: 3, full: 1,
 };
 
 function DBSection(props: DBSectionProps) {
@@ -3361,13 +3361,14 @@ function DBSection(props: DBSectionProps) {
 
   const pad = SPACING_PAD[spacing] ?? 32;
   const gap = DENSITY_GAP[density] ?? 16;
-  const cardW = CARD_WIDTH[widthKey] ?? 120;
+  const cardW = CARD_FLEX[widthKey] ?? 2;
+  const isFull = widthKey === "full";
 
-  // Inject width into each child card
+  // Inject flex scale into each child card
   const styledChildren = React.Children.map(props.children, (child) => {
     if (!React.isValidElement(child)) return child;
     return React.cloneElement(child as React.ReactElement<any>, {
-      style: [{ width: cardW }, (child.props as any).style],
+      style: [isFull ? { flex: 1 } : { flex: cardW }, (child.props as any).style],
     });
   });
 
@@ -3378,7 +3379,7 @@ function DBSection(props: DBSectionProps) {
         (props as any).style,
       ]}
     >
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap }}>
+      <View style={{ flexDirection: "row", flexWrap: isFull ? "wrap" : "nowrap", gap }}>
         {styledChildren}
       </View>
     </View>
