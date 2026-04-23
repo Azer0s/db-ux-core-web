@@ -3132,21 +3132,20 @@ const styles = StyleSheet.create({
 export default DBBrand;
 `,
 
-  'card/card.tsx': `import React from "react";
+  'card/card.tsx': `import React, { useContext } from "react";
 import { View, Pressable } from "react-native";
 import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme, DBBorderRadius, DBSpacing } from "../../shared/tokens";
+import { DBSectionContext } from "../section/section";
 import type { DBCardProps } from "./model";
 
 function DBCard(props: DBCardProps) {
   const { isDark } = useDBFont();
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
   const level = String(props.elevationLevel ?? "1") as "1" | "2" | "3";
+  const sectionCtx = useContext(DBSectionContext);
 
-  // Level 1 — flat surface with border (clearly embedded, no shadow)
-  // Level 2 — white card, moderate shadow (raised)
-  // Level 3 — white card, strong shadow (floating)
   const elevationMap = {
     "1": {
       bg: c.bg,
@@ -3166,6 +3165,12 @@ function DBCard(props: DBCardProps) {
   };
   const e = elevationMap[level] ?? elevationMap["1"];
 
+  const sizeStyle = sectionCtx.isFull
+    ? { flex: 1 }
+    : sectionCtx.cardWidth != null
+      ? { width: sectionCtx.cardWidth }
+      : {};
+
   const cardStyle = {
     backgroundColor: e.bg,
     borderRadius: DBBorderRadius.md,
@@ -3178,6 +3183,7 @@ function DBCard(props: DBCardProps) {
     shadowOpacity: e.shadowOpacity,
     shadowRadius: e.shadowRadius,
     elevation: e.elevation,
+    ...sizeStyle,
   };
 
   if (props.onClick || (props as any).behavior === "interactive") {
@@ -3332,10 +3338,12 @@ const styles = StyleSheet.create({
 export default DBNotification;
 `,
 
-  'section/section.tsx': `import React from "react";
+  'section/section.tsx': `import React, { createContext } from "react";
 import { View, useWindowDimensions } from "react-native";
 import { useDBFont } from "../../providers/font-provider";
 import type { DBSectionProps } from "./model";
+
+export const DBSectionContext = createContext<{ cardWidth?: number; isFull: boolean }>({ isFull: false });
 
 const SPACING_PAD: Record<string, number> = {
   none: 0, small: 16, medium: 32, large: 48,
@@ -3345,7 +3353,6 @@ const DENSITY_GAP: Record<string, number> = {
   functional: 8, regular: 16, expressive: 24,
 };
 
-// width = card width as fraction of screen width
 const CARD_SCALE: Record<string, number> = {
   small: 0.2, medium: 0.35, large: 0.55,
 };
@@ -3363,28 +3370,23 @@ function DBSection(props: DBSectionProps) {
   const gap = DENSITY_GAP[density] ?? 16;
   const cardWidth = isFull ? undefined : Math.round(screenW * (CARD_SCALE[widthKey] ?? 0.35));
 
-  const styledChildren = React.Children.map(props.children, (child) => {
-    if (!React.isValidElement(child)) return child;
-    return React.cloneElement(child as React.ReactElement<any>, {
-      style: [isFull ? { flex: 1 } : { width: cardWidth }, (child.props as any).style],
-    });
-  });
-
   return (
-    <View
-      style={[
-        {
-          padding: pad,
-          backgroundColor: sectionBg,
-          ...(isFull ? { width: "100%" } : { alignSelf: "flex-start" }),
-        },
-        (props as any).style,
-      ]}
-    >
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap }}>
-        {styledChildren}
+    <DBSectionContext.Provider value={{ cardWidth, isFull }}>
+      <View
+        style={[
+          {
+            padding: pad,
+            backgroundColor: sectionBg,
+            ...(isFull ? { width: "100%" } : { alignSelf: "flex-start" }),
+          },
+          (props as any).style,
+        ]}
+      >
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap }}>
+          {props.children}
+        </View>
       </View>
-    </View>
+    </DBSectionContext.Provider>
   );
 }
 
