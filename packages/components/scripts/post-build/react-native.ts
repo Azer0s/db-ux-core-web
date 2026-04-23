@@ -1707,7 +1707,7 @@ import { DBTooltipProps } from "./model";
 type Placement = "top" | "bottom" | "left" | "right";
 
 const TIP_W = 220;
-const TIP_H = 72; // generous estimate
+const TIP_H = 72;
 
 function extractText(node: any): string {
   if (typeof node === "string") return node;
@@ -1728,26 +1728,37 @@ function DBTooltipFn(props: DBTooltipProps, component: any) {
   const childArray = React.Children.toArray(props.children);
   const trigger = childArray[0];
 
-  // Resolve tooltip content: explicit prop wins, then second child text extraction
   const rawContent: string =
     (props as any).tooltipText ??
     (props as any).content ??
     (props as any).text ??
     (childArray[1] ? extractText(childArray[1]) : "");
 
-  function handlePress() {
+  function show() {
     if (!rawContent) return;
-    if (triggerRef.current) {
-      (triggerRef.current as any).measureInWindow(
-        (x: number, y: number, w: number, h: number) => {
+    triggerRef.current
+      ? (triggerRef.current as any).measureInWindow((x: number, y: number, w: number, h: number) => {
           setPos({ x, y, w, h });
           setVisible(true);
-        }
-      );
-    } else {
-      setVisible(true);
-    }
+        })
+      : setVisible(true);
   }
+
+  // Inject the show handler into the trigger so it fires even when the trigger
+  // is a Pressable/Button that claims the touch before the parent can.
+  const triggerWithHandler = React.isValidElement(trigger)
+    ? React.cloneElement(trigger as React.ReactElement<any>, {
+        onPress: (e: any) => {
+          (trigger as React.ReactElement<any>).props?.onPress?.(e);
+          (trigger as React.ReactElement<any>).props?.onClick?.(e);
+          show();
+        },
+        onClick: (e: any) => {
+          (trigger as React.ReactElement<any>).props?.onClick?.(e);
+          show();
+        },
+      })
+    : trigger;
 
   const placement: Placement = ((props as any).placement ?? "bottom") as Placement;
   const { width: winW } = Dimensions.get("window");
@@ -1764,20 +1775,24 @@ function DBTooltipFn(props: DBTooltipProps, component: any) {
         return { top: Math.max(8, y + h / 2 - TIP_H / 2), right: winW - x + GAP, maxWidth: TIP_W };
       case "right":
         return { top: Math.max(8, y + h / 2 - TIP_H / 2), left: x + w + GAP, maxWidth: TIP_W };
-      default: // bottom
+      default:
         return { top: y + h + GAP, left };
     }
   }
 
   return (
     <View style={styles.container} ref={component}>
-      <Pressable ref={triggerRef} onPress={handlePress}>
-        {trigger}
-      </Pressable>
+      {/* Wrapper gives us a reliable measureInWindow target */}
+      <View ref={triggerRef}>
+        {triggerWithHandler}
+      </View>
       {rawContent ? (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
           <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setVisible(false)}>
-            <View style={[styles.tooltip, { backgroundColor: c.text, shadowColor: "#000" }, positionStyle()]} pointerEvents="none">
+            <View
+              style={[styles.tooltip, { backgroundColor: c.text, shadowColor: "#000" }, positionStyle()]}
+              pointerEvents="none"
+            >
               <DBText style={[styles.tooltipText, { color: c.bg }]}>{rawContent}</DBText>
             </View>
           </Pressable>
