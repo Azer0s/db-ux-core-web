@@ -2643,6 +2643,10 @@ function DBNotification(props: DBNotificationProps) {
           backgroundColor: c.bg,
           borderLeftColor: palette.border,
           shadowColor: c.shadowColor,
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.1,
+          shadowRadius: 3,
+          elevation: 2,
         },
       ]}
       accessibilityRole="alert"
@@ -2676,10 +2680,6 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     padding: DBSpacing.md,
     marginVertical: DBSpacing.xs + 2,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
   },
   imageSlot: { marginBottom: DBSpacing.sm },
   headline: { fontSize: DBTypography.sizeMD, fontWeight: DBTypography.weightBold, marginBottom: DBSpacing.xs },
@@ -2890,6 +2890,10 @@ function DBCustomSelectDropdown(props: DBCustomSelectDropdownProps) {
           backgroundColor: c.bg,
           borderColor: c.border,
           shadowColor: c.shadowColor,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.15,
+          shadowRadius: 4,
+          elevation: 5,
         },
       ]}
     >
@@ -2906,10 +2910,6 @@ const styles = StyleSheet.create({
     right: 0,
     borderRadius: DBBorderRadius.sm,
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 5,
     zIndex: 1000,
   },
 });
