@@ -21,10 +21,33 @@ export default function LinkShowcase() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <DBText style={[styles.heading, { color: c.heading }]}>DBLink</DBText>
+
       <Section title="Variants">
-        <DBLink variant="adaptive">Adaptive link (text color, underlined)</DBLink>
+        <DBLink>Default link (blue)</DBLink>
+        <DBLink variant="adaptive">Adaptive link (black)</DBLink>
         <DBLink variant="brand">Brand link (DB red)</DBLink>
-        <DBLink variant="inline">Inline link (no arrow)</DBLink>
+      </Section>
+
+      <DBDivider />
+
+      <Section title="Content type">
+        <DBLink content="internal">Internal link (→)</DBLink>
+        <DBLink content="external">External link (↗)</DBLink>
+        <DBLink variant="adaptive" content="internal">Adaptive internal</DBLink>
+        <DBLink variant="brand" content="external">Brand external</DBLink>
+      </Section>
+
+      <DBDivider />
+
+      <Section title="Inline (no arrow, sits in text)">
+        <DBText style={[styles.bodyText, { color: c.body }]}>
+          Learn more at the{" "}
+          <DBLink content="inline">design system docs</DBLink>
+          {" "}or read the{" "}
+          <DBLink variant="adaptive" content="inline">adaptive inline link</DBLink>
+          {" "}and the{" "}
+          <DBLink variant="brand" content="inline">brand inline link</DBLink>.
+        </DBText>
       </Section>
 
       <DBDivider />
@@ -36,29 +59,10 @@ export default function LinkShowcase() {
 
       <DBDivider />
 
-      <Section title="With content type">
-        <DBLink content="external">External link</DBLink>
-        <DBLink content="internal">Internal link</DBLink>
-      </Section>
-
-      <DBDivider />
-
-      <Section title="In context">
-        <DBText style={[styles.bodyText, { color: c.body }]}>
-          The DB UX Design System provides a comprehensive set of components for building
-          consistent digital products. Learn more at the{" "}
-          <DBLink variant="inline">design system documentation</DBLink>
-          {" "}or explore the{" "}
-          <DBLink variant="inline">component library on GitHub</DBLink>.
-        </DBText>
-      </Section>
-
-      <DBDivider />
-
       <Section title="With leading icon">
         <DBLink icon="download">Download PDF</DBLink>
-        <DBLink icon="phone">Call support</DBLink>
-        <DBLink icon="mail">Send email</DBLink>
+        <DBLink icon="phone" variant="adaptive">Call support</DBLink>
+        <DBLink icon="mail" variant="brand">Send email</DBLink>
       </Section>
     </ScrollView>
   );

@@ -1374,7 +1374,7 @@ import { Pressable, Text, View } from "react-native";
 import DBText from "../text/text";
 import * as Linking from "expo-linking";
 import { useDBFont } from "../../providers/font-provider";
-import { DBTheme, DBTypography } from "../../shared/tokens";
+import { DBTheme, DBTypography, DBColors } from "../../shared/tokens";
 import { DBLinkProps } from "./model";
 
 function MIIcon({ name, size, color, style }: { name: string; size: number; color: string; style?: any }) {
@@ -1389,20 +1389,29 @@ function DBLinkFn(props: DBLinkProps, component: any) {
   const { isDark } = useDBFont();
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
 
-  const variant = (props as any).variant ?? "adaptive";
+  const variant = (props as any).variant ?? ""; // empty = default blue
   const size = (props as any).size ?? "medium";
-  const content = (props as any).content;
-  // leadingIcon: shown before the label (e.g. "download", "phone")
+  // content: "inline" | "internal" | "external"
+  // "inline" = no arrow, renders as Text (sits inside parent Text)
+  // "internal" = arrow_forward (default), "external" = open_in_new
+  const content = (props as any).content ?? "internal";
   const leadingIcon = (props as any).icon as string | undefined;
-  const isInline = variant === "inline";
+  const isInline = content === "inline";
   const isSmall = size === "small";
   const isDisabled = Boolean(props.disabled);
 
-  // brand = DB red; adaptive/inline = text color with underline (web spec: adaptive-on-bg = neutral text)
-  const linkColor = variant === "brand" ? c.brandText : c.text;
+  // default (no variant) = informational blue
+  // adaptive = text color (black in light, white in dark)
+  // brand = DB red
+  const blueColor = isDark ? DBColors.informational.light : DBColors.informational.origin;
+  const linkColor = variant === "brand"
+    ? c.brandText
+    : variant === "adaptive"
+      ? c.text
+      : blueColor;
   const activeColor = isDisabled ? c.textDisabled : linkColor;
 
-  // trailing navigation arrow — always present on block links
+  // trailing navigation arrow (only for non-inline)
   const trailingIconName = content === "external" ? "open_in_new" : "arrow_forward";
 
   async function handlePress() {
@@ -1413,7 +1422,7 @@ function DBLinkFn(props: DBLinkProps, component: any) {
     if (props.onClick) (props.onClick as any)();
   }
 
-  // Inline variant: bare Text so it sits naturally inside a parent Text
+  // Inline content: bare Text — sits naturally inside a parent Text, inherits font size
   if (isInline) {
     return (
       <Text
@@ -1426,7 +1435,7 @@ function DBLinkFn(props: DBLinkProps, component: any) {
     );
   }
 
-  // Block variant: [leading icon?] Label [trailing arrow]
+  // Block: [leading icon?] Label [trailing arrow]
   const fontSize = isSmall ? DBTypography.sizeSM : DBTypography.sizeMD;
   const iconSize = isSmall ? 14 : 16;
 
