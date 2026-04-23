@@ -1370,7 +1370,7 @@ export default DBIcon;
 
 	/* ---- DBLink → expo-linking ---- */
 	'link/link.tsx': `import React, { forwardRef } from "react";
-import { Pressable, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import DBText from "../text/text";
 import * as Linking from "expo-linking";
 import { useDBFont } from "../../providers/font-provider";
@@ -1383,22 +1383,18 @@ function DBLinkFn(props: DBLinkProps, component: any) {
 
   const variant = (props as any).variant ?? "adaptive";
   const size = (props as any).size ?? "medium";
-  const content = (props as any).content; // "internal" | "external" | undefined
+  const content = (props as any).content;
   const isInline = variant === "inline";
   const isSmall = size === "small";
+  const isDisabled = Boolean(props.disabled);
 
-  // Colour: brand variant uses purple, adaptive/inline uses brand red
   const linkColor = variant === "brand"
     ? (isDark ? "#a6a5e7" : "#514ec7")
-    : c.brandText;
+    : c.text;
 
-  // Arrow icon appended after text (unless inline)
   const arrow = !isInline && content === "external" ? " ↗"
-    : !isInline && content === "internal" ? " →"
-    : !isInline ? " →"   // adaptive default also shows arrow
+    : !isInline ? " →"
     : "";
-
-  const fontSize = isSmall ? DBTypography.sizeSM : DBTypography.sizeMD;
 
   async function handlePress() {
     if (props.href) {
@@ -1408,18 +1404,33 @@ function DBLinkFn(props: DBLinkProps, component: any) {
     if (props.onClick) (props.onClick as any)();
   }
 
+  // Inline variant: render as Text so it sits naturally inside a parent Text
+  if (isInline) {
+    return (
+      <Text
+        onPress={isDisabled ? undefined : handlePress}
+        accessibilityRole="link"
+        style={{ color: isDisabled ? c.textDisabled : linkColor, textDecorationLine: isDisabled ? "none" : "underline" }}
+      >
+        {props.text ?? props.children}
+      </Text>
+    );
+  }
+
+  // Block variant: Pressable row with DBText + arrow
+  const fontSize = isSmall ? DBTypography.sizeSM : DBTypography.sizeMD;
   return (
     <Pressable
       ref={component}
       onPress={handlePress}
-      disabled={Boolean(props.disabled)}
+      disabled={isDisabled}
       accessibilityRole="link"
       accessibilityLabel={props.text ?? String(props.children ?? "")}
-      style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+      style={({ pressed }) => [{ flexDirection: "row", alignItems: "center" }, pressed && { opacity: 0.7 }]}
     >
       <DBText style={[
-        { color: Boolean(props.disabled) ? c.textDisabled : linkColor, textDecorationLine: "underline", fontSize },
-        Boolean(props.disabled) && { textDecorationLine: "none" },
+        { color: isDisabled ? c.textDisabled : linkColor, textDecorationLine: "underline", fontSize },
+        isDisabled && { textDecorationLine: "none" },
       ]}>
         {props.text ?? props.children}{arrow}
       </DBText>
