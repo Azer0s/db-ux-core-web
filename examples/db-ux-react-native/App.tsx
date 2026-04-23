@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Platform, Pressable, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { DBFontProvider, DBText, useDBFont } from "@db-ux/react-native-core-components";
 import BadgeShowcase from "./screens/BadgeShowcase";
 import ButtonShowcase from "./screens/ButtonShowcase";

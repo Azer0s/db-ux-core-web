@@ -1076,57 +1076,173 @@ function DBNavigation(props: DBNavigationExtraProps) {
 export default DBNavigation;
 `,
 
-	/* ---- DBNavigationItem → styled pressable nav item ---- */
-	'navigation-item/navigation-item.tsx': `import React from "react";
-import { Pressable, StyleSheet } from "react-native";
+	/* ---- DBNavigationItem → styled pressable nav item with dropdown ---- */
+	'navigation-item/navigation-item.tsx': `import React, { useRef, useState } from "react";
+import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
-import { DBTheme } from "../../shared/tokens";
+import { DBTheme, DBSpacing } from "../../shared/tokens";
 
 export type DBNavigationItemProps = {
   label?: string;
   active?: boolean;
+  disabled?: boolean | string;
   onPress?: () => void;
+  /** Sub-navigation items rendered as a dropdown panel */
+  subNavigation?: React.ReactNode;
+  /** Controlled expansion state */
+  subNavigationExpanded?: boolean | string;
   children?: React.ReactNode;
 };
 
 function DBNavigationItem(props: DBNavigationItemProps) {
   const { isDark } = useDBFont();
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
+  const triggerRef = useRef<View>(null);
+  const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [triggerPos, setTriggerPos] = useState({ x: 0, y: 0, w: 0, h: 0 });
+
+  const hasDropdown = Boolean(props.subNavigation);
+  const isExpanded = props.subNavigationExpanded !== undefined
+    ? Boolean(props.subNavigationExpanded)
+    : dropdownVisible;
+
+  function handlePress() {
+    if (hasDropdown) {
+      if (triggerRef.current) {
+        (triggerRef.current as any).measureInWindow(
+          (x: number, y: number, w: number, h: number) => {
+            setTriggerPos({ x, y, w, h });
+            setDropdownVisible((v) => !v);
+          }
+        );
+      } else {
+        setDropdownVisible((v) => !v);
+      }
+    } else {
+      props.onPress?.();
+    }
+  }
+
+  function closeDropdown() {
+    setDropdownVisible(false);
+  }
+
+  const winW = Dimensions.get("window").width;
+  // Clamp panel so it doesn't overflow the right edge
+  const panelW = Math.min(200, winW - 16);
+  const panelLeft = Math.max(8, Math.min(triggerPos.x, winW - panelW - 8));
+  const panelTop = triggerPos.y + triggerPos.h;
+
+  const styles = mkStyles(c);
 
   return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.item,
-        props.active
-          ? { borderBottomColor: c.brandPrimary }
-          : { borderBottomColor: "transparent" },
-        pressed && { backgroundColor: c.bgSurface },
-      ]}
-      onPress={props.onPress}
-      accessibilityRole="menuitem"
-      accessibilityState={{ selected: props.active }}
-    >
-      {props.label ? (
-        <DBText
-          weight={props.active ? "bold" : "regular"}
-          style={{ color: props.active ? c.brandText : c.textMuted }}
-        >
-          {props.label}
-        </DBText>
-      ) : props.children}
-    </Pressable>
+    <>
+      <Pressable
+        ref={triggerRef}
+        style={({ pressed }) => [
+          styles.item,
+          props.active ? { borderBottomColor: c.brandPrimary } : { borderBottomColor: "transparent" },
+          pressed && { backgroundColor: c.bgSurface },
+          Boolean(props.disabled) && { opacity: 0.4 },
+        ]}
+        onPress={handlePress}
+        disabled={Boolean(props.disabled)}
+        accessibilityRole="menuitem"
+        accessibilityState={{ selected: props.active, expanded: hasDropdown ? isExpanded : undefined }}
+      >
+        <View style={styles.labelRow}>
+          {props.label ? (
+            <DBText
+              weight={props.active ? "bold" : "regular"}
+              style={{ color: props.active ? c.brandText : c.textMuted }}
+            >
+              {props.label}
+            </DBText>
+          ) : props.children}
+          {hasDropdown && (
+            <DBText style={[styles.chevron, { color: c.textMuted }]}>
+              {isExpanded ? " ▴" : " ▾"}
+            </DBText>
+          )}
+        </View>
+      </Pressable>
+
+      {hasDropdown && (
+        <Modal visible={dropdownVisible} transparent animationType="fade" onRequestClose={closeDropdown}>
+          {/* Backdrop to close on outside tap */}
+          <Pressable style={StyleSheet.absoluteFillObject} onPress={closeDropdown} />
+          <View style={[styles.panel, {
+            top: panelTop,
+            left: panelLeft,
+            width: panelW,
+            backgroundColor: c.bg,
+            borderColor: c.border,
+            shadowColor: "#000",
+          }]}>
+            <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
+              {React.Children.map(props.subNavigation as React.ReactNode, (child, i) => (
+                <Pressable
+                  key={i}
+                  style={({ pressed }) => [styles.dropdownItem, pressed && { backgroundColor: c.bgSurface }]}
+                  onPress={() => {
+                    closeDropdown();
+                    if (React.isValidElement(child) && (child.props as any).onPress) {
+                      (child.props as any).onPress();
+                    }
+                  }}
+                >
+                  {React.isValidElement(child) ? (
+                    <DBText
+                      weight={(child.props as any).active ? "bold" : "regular"}
+                      style={{ color: (child.props as any).active ? c.brandText : c.text }}
+                    >
+                      {(child.props as any).label ?? (child.props as any).children}
+                    </DBText>
+                  ) : child}
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        </Modal>
+      )}
+    </>
   );
 }
 
-const styles = StyleSheet.create({
-  item: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 9,
-    borderBottomWidth: 3,
-  },
-});
+function mkStyles(c: typeof DBTheme.light) {
+  return StyleSheet.create({
+    item: {
+      paddingHorizontal: 12,
+      paddingTop: 12,
+      paddingBottom: 9,
+      borderBottomWidth: 3,
+    },
+    labelRow: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    chevron: {
+      fontSize: 11,
+    },
+    panel: {
+      position: "absolute",
+      borderWidth: StyleSheet.hairlineWidth,
+      borderRadius: 8,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.14,
+      shadowRadius: 12,
+      elevation: 8,
+      maxHeight: 320,
+      overflow: "hidden",
+    },
+    dropdownItem: {
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+    },
+  });
+}
 
 export default DBNavigationItem;
 `,
@@ -1673,7 +1789,7 @@ import { DBPopoverProps } from "./model";
 
 function mkStyles(c: typeof DBTheme.light) {
   return StyleSheet.create({
-    backdrop: { flex: 1 },
+    backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)" },
     centeredWrap: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 24 },
     panel: {
       backgroundColor: c.bg,
@@ -2658,7 +2774,7 @@ function DBCard(props: DBCardProps) {
   if (props.onClick || (props as any).behavior === "interactive") {
     return (
       <Pressable
-        style={({ pressed }) => [cardStyle, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
+        style={({ pressed }) => [cardStyle, pressed && { opacity: 0.92 }]}
         onPress={props.onClick as any}
         accessibilityRole="button"
       >
