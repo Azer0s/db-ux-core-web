@@ -478,7 +478,8 @@ const REPLACEMENTS: Array<[RegExp | string, string]> = [
 	[
 		`import * as React from "react";`,
 		`import React, { useRef, useState, useEffect, forwardRef, useId } from "react";
-import { View, Text, TouchableOpacity, TextInput, ScrollView, Modal, Pressable, SafeAreaView, StyleSheet, Image } from "react-native";
+import { View, TouchableOpacity, TextInput, ScrollView, Modal, Pressable, SafeAreaView, StyleSheet, Image } from "react-native";
+import DBText from "../text/text";
 import * as Linking from "expo-linking";`
 	],
 	// Remove the duplicated hook import lines mitosis generates
@@ -513,7 +514,7 @@ import * as Linking from "expo-linking";`
 	[/<\/textarea>/g, '</TextInput>'],
 	// label → Text
 	[/<label\b([^>]*)>/g, '<Text$1>'],
-	[/<\/label>/g, '</Text>'],
+	[/<\/label>/g, '</DBText>'],
 	// anchor → Pressable
 	[/<a\b([^>]*)>/g, '<Pressable$1>'],
 	[/<\/a>/g, '</Pressable>'],
@@ -901,7 +902,7 @@ const COMPONENT_OVERRIDES: Record<string, string> = {
 	'text/text.tsx': `import React from "react";
 import { Text } from "react-native";
 import { useDBFont } from "../../providers/font-provider";
-import { DBTheme, DBTypography, DBFontFamily } from "../../shared/tokens";
+import { DBTheme, DBTypography } from "../../shared/tokens";
 import type { DBTextProps } from "./model";
 
 const VARIANT_COLOR: Record<NonNullable<DBTextProps["variant"]>, keyof typeof DBTheme.light> = {
@@ -951,14 +952,8 @@ const WEIGHT_MAP: Record<NonNullable<DBTextProps["weight"]>, string> = {
   bold:    DBTypography.weightBold,
 };
 
-const FONT_FAMILY_MAP: Record<NonNullable<DBTextProps["weight"]>, string> = {
-  regular: DBFontFamily.regular,
-  medium:  DBFontFamily.medium,
-  bold:    DBFontFamily.bold,
-};
-
 function DBText(props: DBTextProps) {
-  const { isDark } = useDBFont();
+  const { isDark, fontFamily: f } = useDBFont();
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
   const variant = props.variant ?? "body";
 
@@ -979,7 +974,7 @@ function DBText(props: DBTextProps) {
           color: c[colorKey],
           fontSize,
           fontWeight: fontWeightStr as any,
-          fontFamily: FONT_FAMILY_MAP[weightKey],
+          fontFamily: f[weightKey],
           ...(letterSpacing !== undefined ? { letterSpacing } : {}),
           ...(textTransform !== undefined ? { textTransform } : {}),
         },
@@ -998,6 +993,7 @@ export default DBText;
 	/* ---- DBPage → SafeAreaView (built-in react-native) + StatusBar ---- */
 	'page/page.tsx': `import React, { forwardRef } from "react";
 import { View, SafeAreaView, StatusBar, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
 import { DBPageProps } from "./model";
@@ -1014,6 +1010,7 @@ function mkStyles(c: typeof DBTheme.light) {
 function DBPageFn(props: DBPageProps, component: any) {
   const { isDark } = useDBFont();
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
+
   const styles = mkStyles(c);
   return (
     <SafeAreaView style={styles.page} ref={component}>
@@ -1032,6 +1029,7 @@ export default DBPage;
 	/* ---- DBNavigation → simple View container ---- */
 	'navigation/navigation.tsx': `import React from "react";
 import { View, StyleSheet } from "react-native";
+import DBText from "../text/text";
 
 export type DBNavigationExtraProps = {
   children?: React.ReactNode;
@@ -1051,7 +1049,8 @@ export default DBNavigation;
 
 	/* ---- DBNavigationItem → simple View item ---- */
 	'navigation-item/navigation-item.tsx': `import React from "react";
-import { Pressable, Text } from "react-native";
+import { Pressable } from "react-native";
+import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
 
@@ -1074,6 +1073,7 @@ function mkStyles(c: typeof DBTheme.light) {
 function DBNavigationItem(props: DBNavigationItemProps) {
   const { isDark } = useDBFont();
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
+
   const styles = mkStyles(c);
   return (
     <Pressable
@@ -1082,7 +1082,7 @@ function DBNavigationItem(props: DBNavigationItemProps) {
       accessibilityRole="menuitem"
     >
       {props.label ? (
-        <Text style={[styles.label, props.active && styles.labelActive]}>{props.label}</Text>
+        <DBText style={[styles.label, props.active && styles.labelActive]}>{props.label}</DBText>
       ) : props.children}
     </Pressable>
   );
@@ -1093,7 +1093,8 @@ export default DBNavigationItem;
 
 	/* ---- DBIcon → @expo/vector-icons MaterialIcons ---- */
 	'icon/icon.tsx': `import React, { forwardRef } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import { DBIconProps } from "./model";
 
 // Lazy type-only import so @expo/vector-icons is NOT required at module load time.
@@ -1118,7 +1119,7 @@ function DBIconFn(props: DBIconProps, component: any) {
 
   if (!iconName) {
     return props.text ? (
-      <Text ref={component} style={styles.text}>{props.text}</Text>
+      <View ref={component}><DBText style={styles.text}>{props.text}</DBText></View>
     ) : (
       <View ref={component}>{props.children}</View>
     );
@@ -1145,7 +1146,8 @@ export default DBIcon;
 
 	/* ---- DBLink → expo-linking ---- */
 	'link/link.tsx': `import React, { forwardRef } from "react";
-import { Text, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
+import DBText from "../text/text";
 import * as Linking from "expo-linking";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme, DBColors } from "../../shared/tokens";
@@ -1161,6 +1163,7 @@ function mkStyles(c: typeof DBTheme.light) {
 function DBLinkFn(props: DBLinkProps, component: any) {
   const { isDark } = useDBFont();
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
+
   const styles = mkStyles(c);
 
   async function handlePress() {
@@ -1180,9 +1183,9 @@ function DBLinkFn(props: DBLinkProps, component: any) {
       accessibilityLabel={props.text ?? String(props.children ?? "")}
       style={({ pressed }) => [pressed && { opacity: 0.7 }]}
     >
-      <Text style={[styles.link, Boolean(props.disabled) && styles.disabled]}>
+      <DBText style={[styles.link, Boolean(props.disabled) && styles.disabled]}>
         {props.text ?? props.children}
-      </Text>
+      </DBText>
     </Pressable>
   );
 }
@@ -1193,9 +1196,10 @@ export default DBLink;
 
 	/* ---- DBButton → Pressable ---- */
 	'button/button.tsx': `import React, { forwardRef } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
+import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
-import { DBTheme, DBTypography, DBFontFamily, DBSpacing, DBBorderRadius } from "../../shared/tokens";
+import { DBTheme, DBTypography, DBSpacing, DBBorderRadius } from "../../shared/tokens";
 import { DBButtonProps } from "./model";
 
 function mkStyles(c: typeof DBTheme.light) {
@@ -1216,7 +1220,7 @@ function mkStyles(c: typeof DBTheme.light) {
     brand: { backgroundColor: c.brandPrimary, borderColor: c.brandPrimary },
     buttonDisabled: { opacity: 0.4 },
     fullWidth: { width: "100%" as const },
-    label: { fontSize: DBTypography.sizeSM, color: c.text, fontWeight: DBTypography.weightMedium, fontFamily: DBFontFamily.medium },
+    label: { fontSize: DBTypography.sizeSM, color: c.text, fontWeight: DBTypography.weightMedium },
     labelInverted: { color: c.bg },
     labelDisabled: { color: c.textDisabled },
   };
@@ -1225,6 +1229,7 @@ function mkStyles(c: typeof DBTheme.light) {
 function DBButtonFn(props: DBButtonProps, component: any) {
   const { isDark } = useDBFont();
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
+
   const styles = mkStyles(c);
 
   function handlePress(event: any) {
@@ -1252,7 +1257,7 @@ function DBButtonFn(props: DBButtonProps, component: any) {
       ]}
     >
       {typeof label === "string" ? (
-        <Text
+        <DBText
           style={[
             styles.label,
             (props.variant === "filled" || props.variant === "brand") && styles.labelInverted,
@@ -1260,7 +1265,7 @@ function DBButtonFn(props: DBButtonProps, component: any) {
           ]}
         >
           {label}
-        </Text>
+        </DBText>
       ) : (
         label
       )}
@@ -1275,6 +1280,7 @@ export default DBButton;
 	/* ---- DBCustomButton → Pressable ---- */
 	'custom-button/custom-button.tsx': `import React, { forwardRef } from "react";
 import { Pressable, View, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import { DBCustomButtonProps } from "./model";
 
 function DBCustomButtonFn(props: DBCustomButtonProps, component: any) {
@@ -1311,6 +1317,7 @@ export default DBCustomButton;
 	/* ---- DBHeader → SafeAreaView (built-in) ---- */
 	'header/header.tsx': `import React, { forwardRef } from "react";
 import { View, SafeAreaView, StatusBar } from "react-native";
+import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
 import DBButton from "../button/button";
@@ -1339,6 +1346,7 @@ function mkStyles(c: typeof DBTheme.light) {
 function DBHeaderFn(props: DBHeaderProps, component: any) {
   const { isDark } = useDBFont();
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
+
   const styles = mkStyles(c);
 
   function handleToggle() {
@@ -1382,11 +1390,11 @@ import {
   Modal,
   View,
   Pressable,
-  Text,
   ScrollView,
   Animated,
   StyleSheet,
 } from "react-native";
+import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
 import { DBDrawerProps } from "./model";
@@ -1467,7 +1475,7 @@ function DBDrawerFn(props: DBDrawerProps, component: any) {
             accessibilityRole="button"
             style={({ pressed }) => [pressed && { opacity: 0.7 }]}
           >
-            <Text style={[styles.closeBtn, { color: c.text }]}>✕</Text>
+            <DBText style={[styles.closeBtn, { color: c.text }]}>✕</DBText>
           </Pressable>
         </View>
         <ScrollView style={styles.content}>{props.children}</ScrollView>
@@ -1497,10 +1505,10 @@ export default DBDrawer;
 import {
   Modal,
   View,
-  Text,
   Pressable,
   StyleSheet,
 } from "react-native";
+import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
 import { DBTooltipProps } from "./model";
@@ -1567,9 +1575,9 @@ function DBTooltipFn(props: DBTooltipProps, component: any) {
               { top: pos.y + pos.height + 8, left: pos.x },
             ]}
           >
-            <Text style={styles.tooltipText}>
+            <DBText style={styles.tooltipText}>
               {(props as any).tooltipText ?? props.children}
-            </Text>
+            </DBText>
           </View>
         </Pressable>
       </Modal>
@@ -1589,6 +1597,7 @@ import {
   Pressable,
   ScrollView,
 } from "react-native";
+import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
 import { DBPopoverProps } from "./model";
@@ -1657,6 +1666,7 @@ export default DBPopover;
 	/* ---- DBAccordion → react-native-reanimated ---- */
 	'accordion/accordion.tsx': `import React, { forwardRef, useState, useId } from "react";
 import { View, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import DBAccordionItem from "../accordion-item/accordion-item";
 import { DBAccordionItemDefaultProps } from "../accordion-item/model";
 import { DBAccordionProps } from "./model";
@@ -1706,7 +1716,8 @@ export default DBAccordion;
 
 	/* ---- DBAccordionItem → built-in Animated expand/collapse ---- */
 	'accordion-item/accordion-item.tsx': `import React, { forwardRef, useState, useEffect, useRef } from "react";
-import { View, Text, Pressable, Animated, StyleSheet } from "react-native";
+import { View, Pressable, Animated, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
 import { DBAccordionItemProps } from "./model";
@@ -1774,13 +1785,13 @@ function DBAccordionItemFn(props: DBAccordionItemProps & {
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
       >
-        <Text style={styles.title}>{props.headlinePlain ?? props.text}</Text>
-        <Text style={styles.chevron}>{open ? "▴" : "▾"}</Text>
+        <DBText style={styles.title}>{props.headlinePlain ?? props.text}</DBText>
+        <DBText style={styles.chevron}>{open ? "▴" : "▾"}</DBText>
       </Pressable>
       <Animated.View style={[styles.body, { maxHeight, opacity: anim }]}>
         <View style={styles.bodyInner}>
           {(props as any).content
-            ? <Text>{(props as any).content}</Text>
+            ? <DBText>{(props as any).content}</DBText>
             : props.children}
         </View>
       </Animated.View>
@@ -1794,7 +1805,8 @@ export default DBAccordionItem;
 
 	/* ---- DBTabs → ScrollView tab bar ---- */
 	'tabs/tabs.tsx': `import React, { forwardRef, useState, useId } from "react";
-import { View, ScrollView, Pressable, Text, StyleSheet } from "react-native";
+import { View, ScrollView, Pressable, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
 import { DBSimpleTabProps, DBTabsProps } from "./model";
@@ -1859,9 +1871,9 @@ function DBTabsFn(props: DBTabsProps, component: any) {
             accessibilityRole="tab"
             accessibilityState={{ selected: selectedIndex === index }}
           >
-            <Text style={[styles.tabText, selectedIndex === index && styles.tabTextActive]}>
+            <DBText style={[styles.tabText, selectedIndex === index && styles.tabTextActive]}>
               {tab.label}
-            </Text>
+            </DBText>
           </Pressable>
         ))}
         {props.children}
@@ -1869,7 +1881,7 @@ function DBTabsFn(props: DBTabsProps, component: any) {
       {tabs[selectedIndex] && (
         <View style={styles.panel}>
           {tabs[selectedIndex].content
-            ? <Text>{tabs[selectedIndex].content}</Text>
+            ? <DBText>{tabs[selectedIndex].content}</DBText>
             : tabs[selectedIndex].children}
         </View>
       )}
@@ -1883,25 +1895,27 @@ export default DBTabs;
 
 	/* ---- DBSwitch → RN Switch (built-in) ---- */
 	'switch/switch.tsx': `import React, { forwardRef, useId } from "react";
-import { View, Text, Switch as RNSwitch } from "react-native";
+import { View, Switch as RNSwitch } from "react-native";
+import DBText from "../text/text";
 import DBInfotext from "../infotext/infotext";
 import { DEFAULT_VALID_MESSAGE } from "../../shared/constants";
 import { stringPropVisible } from "../../utils";
 import { useDBFont } from "../../providers/font-provider";
-import { DBTheme, DBTypography, DBFontFamily, DBSpacing } from "../../shared/tokens";
+import { DBTheme, DBTypography, DBSpacing } from "../../shared/tokens";
 import { DBSwitchProps } from "./model";
 
 function mkStyles(c: typeof DBTheme.light) {
   return {
     container: { marginVertical: DBSpacing.sm },
     row: { flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "space-between" as const },
-    label: { flex: 1, fontSize: DBTypography.sizeSM, color: c.text, fontFamily: DBFontFamily.regular },
+    label: { flex: 1, fontSize: DBTypography.sizeSM, color: c.text },
   };
 }
 
 function DBSwitchFn(props: DBSwitchProps, component: any) {
   const { isDark } = useDBFont();
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
+
   const styles = mkStyles(c);
   const uuid = useId();
 
@@ -1913,7 +1927,7 @@ function DBSwitchFn(props: DBSwitchProps, component: any) {
     <View style={styles.container} ref={component}>
       <View style={styles.row}>
         {(props.label || props.children) && (
-          <Text style={styles.label}>{props.label ?? props.children}</Text>
+          <DBText style={styles.label}>{props.label ?? props.children}</DBText>
         )}
         <RNSwitch
           value={Boolean(props.checked)}
@@ -1944,12 +1958,13 @@ export default DBSwitch;
 
 	/* ---- DBCheckbox → Pressable ---- */
 	'checkbox/checkbox.tsx': `import React, { forwardRef, useState } from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Pressable } from "react-native";
+import DBText from "../text/text";
 import DBInfotext from "../infotext/infotext";
 import { DEFAULT_VALID_MESSAGE } from "../../shared/constants";
 import { stringPropVisible } from "../../utils";
 import { useDBFont } from "../../providers/font-provider";
-import { DBTheme, DBTypography, DBFontFamily, DBSpacing, DBBorderRadius } from "../../shared/tokens";
+import { DBTheme, DBTypography, DBSpacing, DBBorderRadius } from "../../shared/tokens";
 import { DBCheckboxProps } from "./model";
 
 function mkStyles(c: typeof DBTheme.light) {
@@ -1959,8 +1974,8 @@ function mkStyles(c: typeof DBTheme.light) {
     box: { width: 20, height: 20, borderWidth: 2, borderColor: c.borderStrong, borderRadius: DBBorderRadius.sm - 1, alignItems: "center" as const, justifyContent: "center" as const },
     boxChecked: { backgroundColor: c.text, borderColor: c.text },
     boxDisabled: { borderColor: c.textDisabled, backgroundColor: c.bgSurface },
-    tick: { color: c.bg, fontSize: 13, fontWeight: DBTypography.weightBold, fontFamily: DBFontFamily.bold },
-    label: { fontSize: DBTypography.sizeSM, color: c.text, flex: 1, fontFamily: DBFontFamily.regular },
+    tick: { color: c.bg, fontSize: 13, fontWeight: DBTypography.weightBold },
+    label: { fontSize: DBTypography.sizeSM, color: c.text, flex: 1 },
     labelDisabled: { color: c.textDisabled },
   };
 }
@@ -1968,6 +1983,7 @@ function mkStyles(c: typeof DBTheme.light) {
 function DBCheckboxFn(props: DBCheckboxProps, component: any) {
   const { isDark } = useDBFont();
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
+
   const styles = mkStyles(c);
   const [internal, setInternal] = useState(Boolean((props as any).defaultChecked));
   const checked = props.checked !== undefined ? Boolean(props.checked) : internal;
@@ -1989,12 +2005,12 @@ function DBCheckboxFn(props: DBCheckboxProps, component: any) {
         accessibilityState={{ checked, disabled: Boolean(props.disabled) }}
       >
         <View style={[styles.box, checked && styles.boxChecked, Boolean(props.disabled) && styles.boxDisabled]}>
-          {checked && <Text style={styles.tick}>✓</Text>}
+          {checked && <DBText style={styles.tick}>✓</DBText>}
         </View>
         {(props.label || props.children) && (
-          <Text style={[styles.label, Boolean(props.disabled) && styles.labelDisabled]}>
+          <DBText style={[styles.label, Boolean(props.disabled) && styles.labelDisabled]}>
             {props.label ?? props.children}
-          </Text>
+          </DBText>
         )}
       </Pressable>
       {stringPropVisible(props.message, props.showMessage) && (
@@ -2015,12 +2031,13 @@ export default DBCheckbox;
 
 	/* ---- DBRadio → Pressable ---- */
 	'radio/radio.tsx': `import React, { forwardRef } from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Pressable } from "react-native";
+import DBText from "../text/text";
 import DBInfotext from "../infotext/infotext";
 import { DEFAULT_VALID_MESSAGE } from "../../shared/constants";
 import { stringPropVisible } from "../../utils";
 import { useDBFont } from "../../providers/font-provider";
-import { DBTheme, DBTypography, DBFontFamily, DBSpacing } from "../../shared/tokens";
+import { DBTheme, DBTypography, DBSpacing } from "../../shared/tokens";
 import { DBRadioProps } from "./model";
 
 function mkStyles(c: typeof DBTheme.light) {
@@ -2033,7 +2050,7 @@ function mkStyles(c: typeof DBTheme.light) {
     wrap: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: c.borderStrong, justifyContent: "center" as const, alignItems: "center" as const },
     wrapDisabled: { borderColor: c.textDisabled },
     inner: { width: 8, height: 8, borderRadius: 4, backgroundColor: c.brandPrimary },
-    label: { fontSize: DBTypography.sizeSM, color: c.text, flex: 1, fontFamily: DBFontFamily.regular },
+    label: { fontSize: DBTypography.sizeSM, color: c.text, flex: 1 },
     labelDisabled: { color: c.textDisabled },
   };
 }
@@ -2041,6 +2058,7 @@ function mkStyles(c: typeof DBTheme.light) {
 function DBRadioFn(props: DBRadioProps, component: any) {
   const { isDark } = useDBFont();
   const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
+
   const styles = mkStyles(c);
   const checked = Boolean(props.checked);
 
@@ -2062,9 +2080,9 @@ function DBRadioFn(props: DBRadioProps, component: any) {
           {checked && <View style={styles.inner} />}
         </View>
         {(props.label || props.children) && (
-          <Text style={[styles.label, Boolean(props.disabled) && styles.labelDisabled]}>
+          <DBText style={[styles.label, Boolean(props.disabled) && styles.labelDisabled]}>
             {props.label ?? props.children}
-          </Text>
+          </DBText>
         )}
       </Pressable>
       {stringPropVisible((props as any).message, (props as any).showMessage) && (
@@ -2080,28 +2098,29 @@ export default DBRadio;
 
 	/* ---- DBSelect → Modal picker ---- */
 	'select/select.tsx': `import React, { forwardRef, useState, useId } from "react";
-import { View, Text, Pressable, Modal, FlatList } from "react-native";
+import { View, Pressable, Modal, FlatList } from "react-native";
+import DBText from "../text/text";
 import DBInfotext from "../infotext/infotext";
 import { DEFAULT_VALID_MESSAGE, DEFAULT_INVALID_MESSAGE } from "../../shared/constants";
 import { stringPropVisible } from "../../utils";
 import { useDBFont } from "../../providers/font-provider";
-import { DBTheme, DBTypography, DBFontFamily, DBSpacing, DBBorderRadius } from "../../shared/tokens";
+import { DBTheme, DBTypography, DBSpacing, DBBorderRadius } from "../../shared/tokens";
 import { DBSelectOptionType, DBSelectProps } from "./model";
 
 function mkStyles(c: typeof DBTheme.light) {
   return {
     container: { marginVertical: DBSpacing.xs },
-    label: { fontSize: DBTypography.size2XS, color: c.textMuted, marginBottom: DBSpacing.xs, fontFamily: DBFontFamily.regular },
+    label: { fontSize: DBTypography.size2XS, color: c.textMuted, marginBottom: DBSpacing.xs },
     trigger: { flexDirection: "row" as const, alignItems: "center" as const, borderWidth: 1, borderColor: c.borderStrong, borderRadius: DBBorderRadius.sm, padding: 10, backgroundColor: c.inputBg },
     triggerDisabled: { borderColor: c.textDisabled, backgroundColor: c.bgSurface },
-    triggerText: { flex: 1, fontSize: DBTypography.sizeSM, color: c.text, fontFamily: DBFontFamily.regular },
+    triggerText: { flex: 1, fontSize: DBTypography.sizeSM, color: c.text },
     arrow: { fontSize: DBTypography.sizeSM, color: c.textMuted },
     backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "flex-end" as const },
     sheet: { backgroundColor: c.inputBg, borderTopLeftRadius: DBBorderRadius.lg, borderTopRightRadius: DBBorderRadius.lg, maxHeight: "50%" as any, padding: DBSpacing.sm },
     option: { padding: 14, borderBottomWidth: 1, borderBottomColor: c.border },
     optionSelected: { backgroundColor: c.bgElevated },
-    optionText: { fontSize: DBTypography.sizeMD, color: c.text, fontFamily: DBFontFamily.regular },
-    optionTextSelected: { fontWeight: DBTypography.weightBold, color: c.brandPrimary, fontFamily: DBFontFamily.bold },
+    optionText: { fontSize: DBTypography.sizeMD, color: c.text },
+    optionTextSelected: { fontWeight: DBTypography.weightBold, color: c.brandPrimary },
     optionPressed: { backgroundColor: c.bgElevated },
   };
 }
@@ -2132,15 +2151,15 @@ function DBSelectFn(props: DBSelectProps, component: any) {
 
   return (
     <View style={styles.container} ref={component}>
-      {props.label && <Text style={styles.label}>{props.label}</Text>}
+      {props.label && <DBText style={styles.label}>{props.label}</DBText>}
       <Pressable
         style={({ pressed }) => [styles.trigger, Boolean(props.disabled) && styles.triggerDisabled, pressed && { opacity: 0.8 }]}
         onPress={() => !Boolean(props.disabled) && setOpen(true)}
         accessibilityRole="combobox"
         accessibilityState={{ expanded: open, disabled: Boolean(props.disabled) }}
       >
-        <Text style={styles.triggerText}>{display}</Text>
-        <Text style={styles.arrow}>▾</Text>
+        <DBText style={styles.triggerText}>{display}</DBText>
+        <DBText style={styles.arrow}>▾</DBText>
       </Pressable>
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
@@ -2156,7 +2175,7 @@ function DBSelectFn(props: DBSelectProps, component: any) {
                     style={({ pressed }) => [styles.option, val === selected && styles.optionSelected, pressed && styles.optionPressed]}
                     onPress={() => handleSelect(item)}
                   >
-                    <Text style={[styles.optionText, val === selected && styles.optionTextSelected]}>{lbl}</Text>
+                    <DBText style={[styles.optionText, val === selected && styles.optionTextSelected]}>{lbl}</DBText>
                   </Pressable>
                 );
               }}
@@ -2177,25 +2196,26 @@ export default DBSelect;
 
 	/* ---- DBInput → TextInput ---- */
 	'input/input.tsx': `import React, { forwardRef, useState, useEffect } from "react";
-import { View, Text, TextInput as RNTextInput } from "react-native";
+import { View, TextInput as RNTextInput } from "react-native";
+import DBText from "../text/text";
 import DBInfotext from "../infotext/infotext";
 import { DEFAULT_INVALID_MESSAGE, DEFAULT_VALID_MESSAGE } from "../../shared/constants";
 import { stringPropVisible } from "../../utils";
 import { useDBFont } from "../../providers/font-provider";
-import { DBTheme, DBColors, DBTypography, DBFontFamily, DBSpacing, DBBorderRadius } from "../../shared/tokens";
+import { DBTheme, DBColors, DBTypography, DBSpacing, DBBorderRadius } from "../../shared/tokens";
 import { DBInputProps } from "./model";
 
 function mkStyles(c: typeof DBTheme.light) {
   return {
     container: { marginVertical: DBSpacing.xs },
-    label: { fontSize: DBTypography.size2XS, color: c.textMuted, marginBottom: DBSpacing.xs, fontFamily: DBFontFamily.regular },
+    label: { fontSize: DBTypography.size2XS, color: c.textMuted, marginBottom: DBSpacing.xs },
     required: { color: c.brandPrimary },
-    input: { borderWidth: 1, borderColor: c.borderStrong, borderRadius: DBBorderRadius.sm, padding: 10, fontSize: DBTypography.sizeSM, backgroundColor: c.inputBg, color: c.text, fontFamily: DBFontFamily.regular },
+    input: { borderWidth: 1, borderColor: c.borderStrong, borderRadius: DBBorderRadius.sm, padding: 10, fontSize: DBTypography.sizeSM, backgroundColor: c.inputBg, color: c.text },
     focused: { borderColor: DBColors.informational.origin, borderWidth: 2 },
     invalid: { borderColor: DBColors.critical.origin },
     valid: { borderColor: DBColors.successful.origin },
     disabled: { borderColor: c.textDisabled, backgroundColor: c.bgSurface, color: c.textDisabled },
-    description: { fontSize: DBTypography.size2XS, color: c.textSubtle, marginTop: DBSpacing.xs, fontFamily: DBFontFamily.regular },
+    description: { fontSize: DBTypography.size2XS, color: c.textSubtle, marginTop: DBSpacing.xs },
   };
 }
 
@@ -2214,9 +2234,9 @@ function DBInputFn(props: DBInputProps, component: any) {
   return (
     <View style={styles.container} ref={component}>
       {props.label && (
-        <Text style={styles.label}>
-          {props.label}{props.required && <Text style={styles.required}> *</Text>}
-        </Text>
+        <DBText style={styles.label}>
+          {props.label}{props.required && <DBText style={styles.required}> *</DBText>}
+        </DBText>
       )}
       <RNTextInput
         style={[styles.input, focused && styles.focused, isInvalid && styles.invalid, isValid && styles.valid, Boolean(props.disabled) && styles.disabled]}
@@ -2232,7 +2252,7 @@ function DBInputFn(props: DBInputProps, component: any) {
         onFocus={() => { setFocused(true); if (props.onFocus) (props.onFocus as any)(); }}
         onBlur={() => { setFocused(false); if (props.onBlur) (props.onBlur as any)(); }}
       />
-      {(props as any).description && <Text style={styles.description}>{(props as any).description}</Text>}
+      {(props as any).description && <DBText style={styles.description}>{(props as any).description}</DBText>}
       {stringPropVisible(props.message, props.showMessage) && (
         <DBInfotext size="small" semantic="adaptive">{props.message}</DBInfotext>
       )}
@@ -2248,20 +2268,21 @@ export default DBInput;
 
 	/* ---- DBTextarea → TextInput multiline ---- */
 	'textarea/textarea.tsx': `import React, { forwardRef, useState, useEffect } from "react";
-import { View, Text, TextInput as RNTextInput } from "react-native";
+import { View, TextInput as RNTextInput } from "react-native";
+import DBText from "../text/text";
 import DBInfotext from "../infotext/infotext";
 import { DEFAULT_INVALID_MESSAGE, DEFAULT_VALID_MESSAGE } from "../../shared/constants";
 import { stringPropVisible } from "../../utils";
 import { useDBFont } from "../../providers/font-provider";
-import { DBTheme, DBColors, DBTypography, DBFontFamily, DBSpacing, DBBorderRadius } from "../../shared/tokens";
+import { DBTheme, DBColors, DBTypography, DBSpacing, DBBorderRadius } from "../../shared/tokens";
 import { DBTextareaProps } from "./model";
 
 function mkStyles(c: typeof DBTheme.light) {
   return {
     container: { marginVertical: DBSpacing.xs },
-    label: { fontSize: DBTypography.size2XS, color: c.textMuted, marginBottom: DBSpacing.xs, fontFamily: DBFontFamily.regular },
+    label: { fontSize: DBTypography.size2XS, color: c.textMuted, marginBottom: DBSpacing.xs },
     required: { color: c.brandPrimary },
-    input: { borderWidth: 1, borderColor: c.borderStrong, borderRadius: DBBorderRadius.sm, padding: 10, fontSize: DBTypography.sizeSM, backgroundColor: c.inputBg, color: c.text, minHeight: 80, fontFamily: DBFontFamily.regular },
+    input: { borderWidth: 1, borderColor: c.borderStrong, borderRadius: DBBorderRadius.sm, padding: 10, fontSize: DBTypography.sizeSM, backgroundColor: c.inputBg, color: c.text, minHeight: 80 },
     invalid: { borderColor: DBColors.critical.origin },
     valid: { borderColor: DBColors.successful.origin },
     disabled: { borderColor: c.textDisabled, backgroundColor: c.bgSurface, color: c.textDisabled },
@@ -2282,9 +2303,9 @@ function DBTextareaFn(props: DBTextareaProps, component: any) {
   return (
     <View style={styles.container} ref={component}>
       {props.label && (
-        <Text style={styles.label}>
-          {props.label}{props.required && <Text style={styles.required}> *</Text>}
-        </Text>
+        <DBText style={styles.label}>
+          {props.label}{props.required && <DBText style={styles.required}> *</DBText>}
+        </DBText>
       )}
       <RNTextInput
         style={[styles.input, isInvalid && styles.invalid, isValid && styles.valid, Boolean(props.disabled) && styles.disabled]}
@@ -2314,9 +2335,10 @@ export default DBTextarea;
 
 	/* ---- DBCustomSelect → Modal multi-select picker ---- */
 	'custom-select/custom-select.tsx': `import React, { forwardRef, useState } from "react";
-import { View, Text, Pressable, Modal, FlatList } from "react-native";
+import { View, Pressable, Modal, FlatList } from "react-native";
+import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
-import { DBTheme, DBTypography, DBFontFamily, DBSpacing, DBBorderRadius } from "../../shared/tokens";
+import { DBTheme, DBTypography, DBSpacing, DBBorderRadius } from "../../shared/tokens";
 import { DBCustomSelectProps } from "./model";
 
 function mkStyles(c: typeof DBTheme.light) {
@@ -2367,15 +2389,15 @@ function DBCustomSelectFn(props: DBCustomSelectProps, component: any) {
 
   return (
     <View style={styles.container} ref={component}>
-      {props.label && <Text style={styles.label}>{props.label}</Text>}
+      {props.label && <DBText style={styles.label}>{props.label}</DBText>}
       <Pressable
         style={({ pressed }) => [styles.trigger, Boolean(props.disabled) && styles.triggerDisabled, pressed && { opacity: 0.8 }]}
         onPress={() => !Boolean(props.disabled) && setOpen(true)}
         accessibilityRole="combobox"
         accessibilityState={{ expanded: open }}
       >
-        <Text style={styles.triggerText}>{display}</Text>
-        <Text style={styles.arrow}>{open ? "▴" : "▾"}</Text>
+        <DBText style={styles.triggerText}>{display}</DBText>
+        <DBText style={styles.arrow}>{open ? "▴" : "▾"}</DBText>
       </Pressable>
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
@@ -2397,10 +2419,10 @@ function DBCustomSelectFn(props: DBCustomSelectProps, component: any) {
                   >
                     {props.multiple && (
                       <View style={[styles.check, isSel && styles.checkSelected]}>
-                        {isSel && <Text style={styles.checkMark}>✓</Text>}
+                        {isSel && <DBText style={styles.checkMark}>✓</DBText>}
                       </View>
                     )}
-                    <Text style={[styles.optionText, isSel && styles.optionTextSelected]}>{lbl}</Text>
+                    <DBText style={[styles.optionText, isSel && styles.optionTextSelected]}>{lbl}</DBText>
                   </Pressable>
                 );
               }}
@@ -2424,9 +2446,10 @@ export default DBCustomSelect;
 
 const AUTO_COMPONENT_OVERRIDES: Record<string, string> = {
   'badge/badge.tsx': `import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
-import { DBColorPalette, DBColorPaletteDark, DBTypography, DBFontFamily, DBSpacing, DBBorderRadius } from "../../shared/tokens";
+import { DBColorPalette, DBColorPaletteDark, DBTypography, DBSpacing, DBBorderRadius } from "../../shared/tokens";
 import type { DBBadgeProps } from "./model";
 
 type SemanticKey = keyof typeof DBColorPalette;
@@ -2446,9 +2469,9 @@ function DBBadge(props: DBBadgeProps) {
 
   return (
     <View style={[styles.base, { backgroundColor: bgColor, paddingHorizontal: px, borderColor }]}>
-      <Text style={[styles.text, { color: textColor, fontSize }]}>
+      <DBText style={[styles.text, { color: textColor, fontSize }]}>
         {props.text ?? props.children}
-      </Text>
+      </DBText>
     </View>
   );
 }
@@ -2464,7 +2487,6 @@ const styles = StyleSheet.create({
   },
   text: {
     fontWeight: DBTypography.weightBold,
-    fontFamily: DBFontFamily.bold,
   },
 });
 
@@ -2472,14 +2494,15 @@ export default DBBadge;
 `,
 
   'brand/brand.tsx': `import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import type { DBBrandProps } from "./model";
 
 function DBBrand(props: DBBrandProps) {
   return (
     <View style={styles.container}>
       {props.text ? (
-        <Text style={styles.text}>{props.text}</Text>
+        <DBText style={styles.text}>{props.text}</DBText>
       ) : (
         props.children
       )}
@@ -2497,6 +2520,7 @@ export default DBBrand;
 
   'card/card.tsx': `import React from "react";
 import { View, Pressable } from "react-native";
+import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme, DBBorderRadius, DBSpacing } from "../../shared/tokens";
 import type { DBCardProps } from "./model";
@@ -2535,6 +2559,7 @@ export default DBCard;
 
   'divider/divider.tsx': `import React from "react";
 import { View, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
 import type { DBDividerProps } from "./model";
@@ -2562,9 +2587,10 @@ export default DBDivider;
 `,
 
   'infotext/infotext.tsx': `import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
-import { DBColorPalette, DBColorPaletteDark, DBTypography, DBFontFamily, DBSpacing } from "../../shared/tokens";
+import { DBColorPalette, DBColorPaletteDark, DBTypography, DBSpacing } from "../../shared/tokens";
 import type { DBInfotextProps } from "./model";
 
 type SemanticKey = keyof typeof DBColorPalette;
@@ -2576,24 +2602,25 @@ function DBInfotext(props: DBInfotextProps) {
     ?? (isDark ? DBColorPaletteDark : DBColorPalette).neutral;
   return (
     <View style={styles.container}>
-      <Text style={[styles.text, { color: palette.weakText }]}>{props.text ?? props.children}</Text>
+      <DBText style={[styles.text, { color: palette.weakText }]}>{props.text ?? props.children}</DBText>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { paddingVertical: DBSpacing.xs },
-  text: { fontSize: DBTypography.sizeXS, fontFamily: DBFontFamily.regular },
+  text: { fontSize: DBTypography.sizeXS },
 });
 
 export default DBInfotext;
 `,
 
   'notification/notification.tsx': `import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Pressable, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import { stringPropVisible } from "../../utils";
 import { useDBFont } from "../../providers/font-provider";
-import { DBColorPalette, DBColorPaletteDark, DBTheme, DBTypography, DBFontFamily, DBSpacing, DBBorderRadius } from "../../shared/tokens";
+import { DBColorPalette, DBColorPaletteDark, DBTheme, DBTypography, DBSpacing, DBBorderRadius } from "../../shared/tokens";
 import type { DBNotificationProps } from "./model";
 import { DEFAULT_CLOSE_BUTTON } from "../../shared/constants";
 
@@ -2622,11 +2649,11 @@ function DBNotification(props: DBNotificationProps) {
     >
       {props.image ? <View style={styles.imageSlot}>{props.image as any}</View> : null}
       {stringPropVisible(props.headline, props.showHeadline) ? (
-        <Text style={[styles.headline, { color: c.text }]}>{props.headline}</Text>
+        <DBText style={[styles.headline, { color: c.text }]}>{props.headline}</DBText>
       ) : null}
-      <Text style={[styles.body, { color: c.text }]}>{props.text ?? props.children}</Text>
+      <DBText style={[styles.body, { color: c.text }]}>{props.text ?? props.children}</DBText>
       {stringPropVisible(props.timestamp, props.showTimestamp) ? (
-        <Text style={[styles.timestamp, { color: c.textSubtle }]}>{props.timestamp}</Text>
+        <DBText style={[styles.timestamp, { color: c.textSubtle }]}>{props.timestamp}</DBText>
       ) : null}
       {props.link ? <View>{props.link as any}</View> : null}
       {Boolean(props.closeable) ? (
@@ -2636,7 +2663,7 @@ function DBNotification(props: DBNotificationProps) {
           accessibilityLabel={props.closeButtonText ?? DEFAULT_CLOSE_BUTTON}
           accessibilityRole="button"
         >
-          <Text style={[styles.closeBtnText, { color: c.textMuted }]}>✕</Text>
+          <DBText style={[styles.closeBtnText, { color: c.textMuted }]}>✕</DBText>
         </Pressable>
       ) : null}
     </View>
@@ -2655,9 +2682,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   imageSlot: { marginBottom: DBSpacing.sm },
-  headline: { fontSize: DBTypography.sizeMD, fontWeight: DBTypography.weightBold, marginBottom: DBSpacing.xs, fontFamily: DBFontFamily.bold },
-  body: { fontSize: DBTypography.sizeSM, fontFamily: DBFontFamily.regular },
-  timestamp: { fontSize: DBTypography.size3XS, marginTop: DBSpacing.xs, fontFamily: DBFontFamily.regular },
+  headline: { fontSize: DBTypography.sizeMD, fontWeight: DBTypography.weightBold, marginBottom: DBSpacing.xs },
+  body: { fontSize: DBTypography.sizeSM },
+  timestamp: { fontSize: DBTypography.size3XS, marginTop: DBSpacing.xs },
   closeBtn: { position: "absolute", top: DBSpacing.sm, right: DBSpacing.sm, padding: DBSpacing.xs },
   closeBtnText: { fontSize: DBTypography.sizeMD },
 });
@@ -2667,6 +2694,7 @@ export default DBNotification;
 
   'section/section.tsx': `import React from "react";
 import { View, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import type { DBSectionProps } from "./model";
 
 function DBSection(props: DBSectionProps) {
@@ -2682,6 +2710,7 @@ export default DBSection;
 
   'stack/stack.tsx': `import React from "react";
 import { View, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import type { DBStackProps } from "./model";
 
 function DBStack(props: DBStackProps) {
@@ -2703,7 +2732,8 @@ export default DBStack;
 `,
 
   'tag/tag.tsx': `import React from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Pressable, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme, DBSpacing, DBBorderRadius } from "../../shared/tokens";
 import { DEFAULT_REMOVE } from "../../shared/constants";
@@ -2715,7 +2745,7 @@ function DBTag(props: DBTagProps) {
   const removeLabel = props.removeButton ?? DEFAULT_REMOVE;
   return (
     <View style={[styles.tag, { backgroundColor: c.bgElevated }]}>
-      <Text style={[styles.text, { color: c.text }]}>{props.content ?? props.text ?? props.children}</Text>
+      <DBText style={[styles.text, { color: c.text }]}>{props.content ?? props.text ?? props.children}</DBText>
       {props.behavior === "removable" ? (
         <Pressable
           style={({ pressed }) => [styles.removeBtn, pressed && { opacity: 0.7 }]}
@@ -2723,7 +2753,7 @@ function DBTag(props: DBTagProps) {
           accessibilityLabel={removeLabel}
           accessibilityRole="button"
         >
-          <Text style={[styles.removeBtnText, { color: c.textMuted }]}>✕</Text>
+          <DBText style={[styles.removeBtnText, { color: c.textMuted }]}>✕</DBText>
         </Pressable>
       ) : null}
     </View>
@@ -2751,6 +2781,7 @@ export default DBTag;
 
   'tab-list/tab-list.tsx': `import React from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme } from "../../shared/tokens";
 import type { DBTabListProps } from "./model";
@@ -2776,7 +2807,8 @@ export default DBTabList;
 `,
 
   'tab-item/tab-item.tsx': `import React from "react";
-import { Pressable, Text, StyleSheet } from "react-native";
+import { Pressable, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme, DBTypography } from "../../shared/tokens";
 import type { DBTabItemProps } from "./model";
@@ -2799,9 +2831,9 @@ function DBTabItem(props: DBTabItemProps) {
       accessibilityRole="tab"
       accessibilityState={{ selected }}
     >
-      <Text style={[styles.label, { color: selected ? c.text : c.textMuted }, selected && styles.labelSelected]}>
+      <DBText style={[styles.label, { color: selected ? c.text : c.textMuted }, selected && styles.labelSelected]}>
         {props.label ?? props.children}
-      </Text>
+      </DBText>
     </Pressable>
   );
 }
@@ -2822,6 +2854,7 @@ export default DBTabItem;
 
   'tab-panel/tab-panel.tsx': `import React from "react";
 import { View, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import type { DBTabPanelProps } from "./model";
 
 function DBTabPanel(props: DBTabPanelProps) {
@@ -2841,6 +2874,7 @@ export default DBTabPanel;
 
   'custom-select-dropdown/custom-select-dropdown.tsx': `import React from "react";
 import { View, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme, DBBorderRadius } from "../../shared/tokens";
 import type { DBCustomSelectDropdownProps } from "./model";
@@ -2885,6 +2919,7 @@ export default DBCustomSelectDropdown;
 
   'custom-select-form-field/custom-select-form-field.tsx': `import React from "react";
 import { View, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import type { DBCustomSelectFormFieldProps } from "./model";
 
 function DBCustomSelectFormField(props: DBCustomSelectFormFieldProps) {
@@ -2900,6 +2935,7 @@ export default DBCustomSelectFormField;
 
   'custom-select-list/custom-select-list.tsx': `import React from "react";
 import { ScrollView, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import type { DBCustomSelectListProps } from "./model";
 
 function DBCustomSelectList(props: DBCustomSelectListProps) {
@@ -2918,7 +2954,8 @@ export default DBCustomSelectList;
 `,
 
   'custom-select-list-item/custom-select-list-item.tsx': `import React from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Pressable, StyleSheet } from "react-native";
+import DBText from "../text/text";
 import { useDBFont } from "../../providers/font-provider";
 import { DBTheme, DBTypography, DBBorderRadius, DBSpacing } from "../../shared/tokens";
 import { getBoolean } from "../../utils";
@@ -2946,12 +2983,12 @@ function DBCustomSelectListItem(props: DBCustomSelectListItemProps) {
     >
       {props.type === "checkbox" ? (
         <View style={[styles.check, { borderColor: c.borderStrong }, selected && { backgroundColor: c.brandPrimary, borderColor: c.brandPrimary }]}>
-          {selected ? <Text style={[styles.checkMark, { color: c.bg }]}>✓</Text> : null}
+          {selected ? <DBText style={[styles.checkMark, { color: c.bg }]}>✓</DBText> : null}
         </View>
       ) : null}
-      <Text style={[styles.label, { color: c.text }, disabled && { color: c.textDisabled }]}>
+      <DBText style={[styles.label, { color: c.text }, disabled && { color: c.textDisabled }]}>
         {props.label ?? props.children}
-      </Text>
+      </DBText>
     </Pressable>
   );
 }
@@ -3082,40 +3119,80 @@ export default function reactNative(_tmp?: boolean) {
 		ensureDir(providersDir);
 		const FONT_PROVIDER = `import React, { createContext, useContext, useEffect, useState } from "react";
 import { Appearance } from "react-native";
+import { useFonts } from "expo-font";
+import { DBFontFamily } from "../shared/tokens";
 
-interface DBFontContextValue {
-  /** True once fonts are loaded and ready. */
-  fontsLoaded: boolean;
-  /** True when the active color scheme is dark. */
-  isDark: boolean;
+export interface DBFontSources {
+  /** Require path to the regular weight font file. */
+  regular: any;
+  /** Require path to the medium weight font file. */
+  medium: any;
+  /** Require path to the bold weight font file. */
+  bold: any;
+  /** Require path to the semibold weight font file. Falls back to medium. */
+  semibold?: any;
 }
 
-const DBFontContext = createContext<DBFontContextValue>({ fontsLoaded: true, isDark: false });
+interface DBFontContextValue {
+  /** True when the active color scheme is dark. */
+  isDark: boolean;
+  /** Resolved font family names — always use these in component styles. */
+  fontFamily: {
+    regular: string;
+    medium: string;
+    semibold: string;
+    bold: string;
+  };
+}
+
+const DEFAULT_FONT_FAMILY = {
+  regular:  DBFontFamily.regular,
+  medium:   DBFontFamily.medium,
+  semibold: DBFontFamily.semibold,
+  bold:     DBFontFamily.bold,
+};
+
+const DBFontContext = createContext<DBFontContextValue>({
+  isDark: false,
+  fontFamily: DEFAULT_FONT_FAMILY,
+});
 
 /**
- * Wrap your app root with DBFontProvider after loading the DB typeface (Open Sans).
- * Load fonts in your app using expo-font's useFonts with DBFontFamily constants as keys,
- * then pass the loaded state via the fontsLoaded prop.
+ * Wrap your app root with DBFontProvider. It loads fonts internally and
+ * exposes them to all DB UX components via context — no manual useFonts needed.
  *
  * @example
- * const [fontsLoaded] = useFonts({
- *   [DBFontFamily.regular]:  require('./assets/fonts/OpenSans-Regular.ttf'),
- *   [DBFontFamily.medium]:   require('./assets/fonts/OpenSans-Medium.ttf'),
- *   [DBFontFamily.semiBold]: require('./assets/fonts/OpenSans-SemiBold.ttf'),
- *   [DBFontFamily.bold]:     require('./assets/fonts/OpenSans-Bold.ttf'),
- * });
- * return <DBFontProvider fontsLoaded={fontsLoaded} colorScheme="auto">{children}</DBFontProvider>;
+ * <DBFontProvider
+ *   fonts={{
+ *     regular:  require('./assets/fonts/MyFont-Regular.ttf'),
+ *     medium:   require('./assets/fonts/MyFont-Medium.ttf'),
+ *     bold:     require('./assets/fonts/MyFont-Bold.ttf'),
+ *   }}
+ *   colorScheme="auto"
+ * >
+ *   <App />
+ * </DBFontProvider>
  */
 export function DBFontProvider({
   children,
-  fontsLoaded = false,
+  fonts,
   colorScheme = 'auto',
 }: {
   children: React.ReactNode;
-  fontsLoaded?: boolean;
+  /** Font source files to load. If omitted, the system font is used. */
+  fonts?: DBFontSources;
   /** 'light' | 'dark' | 'auto' (follows system preference). Default: 'auto'. */
   colorScheme?: 'light' | 'dark' | 'auto';
 }) {
+  const fontMap = fonts ? {
+    [DBFontFamily.regular]:  fonts.regular,
+    [DBFontFamily.medium]:   fonts.medium,
+    [DBFontFamily.semibold]: fonts.semibold ?? fonts.medium,
+    [DBFontFamily.bold]:     fonts.bold,
+  } : {};
+
+  const [fontsLoaded] = useFonts(fontMap);
+
   const [systemScheme, setSystemScheme] = useState<'light' | 'dark'>(
     Appearance.getColorScheme() === 'dark' ? 'dark' : 'light'
   );
@@ -3130,10 +3207,11 @@ export function DBFontProvider({
   const resolved = colorScheme === 'auto' ? systemScheme : colorScheme;
   const isDark = resolved === 'dark';
 
-  if (!fontsLoaded) return null;
+  // Wait for fonts if custom fonts were provided
+  if (fonts && !fontsLoaded) return null;
 
   return (
-    <DBFontContext.Provider value={{ fontsLoaded, isDark }}>
+    <DBFontContext.Provider value={{ isDark, fontFamily: DEFAULT_FONT_FAMILY }}>
       {children}
     </DBFontContext.Provider>
   );
@@ -3255,7 +3333,7 @@ export const getRootProps = (_props: any, _filter?: string[]): Record<string, un
 					indexPath,
 					indexContent +
 					`\nexport { DBFontProvider, useDBFont } from './providers/font-provider';\n` +
-					`export { DBColorPalette, DBColorPaletteDark, DBTheme, DBFontFamily } from './shared/tokens';\n` +
+					`export { DBColorPalette, DBColorPaletteDark, DBTheme } from './shared/tokens';\n` +
 					`export type { DBThemeColors } from './shared/tokens';\n` +
 					`export { default as DBText } from './components/text/text';\n` +
 					`export type { DBTextProps } from './components/text/model';\n`,
