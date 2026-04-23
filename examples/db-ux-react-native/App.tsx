@@ -20,6 +20,7 @@ import AccordionShowcase from "./screens/AccordionShowcase";
 import IconShowcase from "./screens/IconShowcase";
 import HeaderShowcase from "./screens/HeaderShowcase";
 import SelectShowcase from "./screens/SelectShowcase";
+import StructureShowcase from "./screens/StructureShowcase";
 
 const SCREENS = [
   { key: "button", label: "Button", component: ButtonShowcase },
@@ -39,6 +40,7 @@ const SCREENS = [
   { key: "header", label: "Header", component: HeaderShowcase },
   { key: "drawer", label: "Drawer", component: DrawerShowcase },
   { key: "select", label: "Select", component: SelectShowcase },
+  { key: "structure", label: "Section", component: StructureShowcase },
   { key: "overlay", label: "Overlay", component: OverlayShowcase },
 ] as const;
 
