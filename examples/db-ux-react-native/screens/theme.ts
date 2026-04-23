@@ -13,7 +13,7 @@ export interface ScreenColors {
 }
 
 const light: ScreenColors = {
-  bg: "#f5f5f5",
+  bg: "#ebf5fe",
   surface: "#ffffff",
   bgElevated: "#ffffff",
   heading: "#16181b",
@@ -25,7 +25,7 @@ const light: ScreenColors = {
 };
 
 const dark: ScreenColors = {
-  bg: "#16181b",
+  bg: "#062736",
   surface: "#23262b",
   bgElevated: "#2e3137",
   heading: "#f0f1f3",

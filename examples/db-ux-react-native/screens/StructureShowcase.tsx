@@ -22,7 +22,7 @@ export default function StructureShowcase() {
   const c = useScreenColors();
 
   return (
-    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: c.bg }]}>
+    <ScrollView contentContainerStyle={styles.container}>
       <DBText style={[styles.heading, { color: c.heading }]}>Section &amp; Divider</DBText>
 
       {/* Density × Spacing grid */}
@@ -37,7 +37,7 @@ export default function StructureShowcase() {
               <DBSection
                 density={density}
                 spacing={spacing}
-                style={{ backgroundColor: c.surface, borderRadius: 8 }}
+                style={{ borderWidth: 1, borderColor: c.border, borderRadius: 8 }}
               >
                 <DBText style={{ color: c.body }}>
                   {density} · {spacing}

@@ -736,7 +736,7 @@ export const DBColorPaletteDark = {
  */
 export const DBTheme = {
   light: {
-    bg:           '#ffffff',  // neutral[14] — page background
+    bg:           '#ebf5fe',  // page background (light)
     bgSurface:    '#f3f3f5',  // neutral[13] — card / surface
     bgElevated:   '#edeef0',  // neutral[12] — elevated surface
     text:         '#2e3036',  // neutral[3]  — primary text
@@ -752,7 +752,7 @@ export const DBTheme = {
     shadowColor:  '#000000',
   },
   dark: {
-    bg:           '#16181b',  // neutral[1]  — page background
+    bg:           '#062736',  // page background (dark)
     bgSurface:    '#222428',  // neutral[2]  — card / surface
     bgElevated:   '#2e3036',  // neutral[3]  — elevated surface
     text:         '#edeef0',  // neutral[12] — primary text
@@ -3285,6 +3285,8 @@ export default DBNotification;
 
   'section/section.tsx': `import React from "react";
 import { View } from "react-native";
+import { useDBFont } from "../../providers/font-provider";
+import { DBTheme } from "../../shared/tokens";
 import type { DBSectionProps } from "./model";
 
 // Vertical padding (padding-block) per density + spacing level
@@ -3298,6 +3300,8 @@ const BLOCK_SPACING: Record<string, Record<string, number>> = {
 const INLINE_PAD = 16;
 
 function DBSection(props: DBSectionProps) {
+  const { isDark } = useDBFont();
+  const c = (isDark ? DBTheme.dark : DBTheme.light) as typeof DBTheme.light;
   const density: string = (props as any).density ?? "regular";
   const spacing: string = (props as any).spacing ?? "medium";
   const densityMap = BLOCK_SPACING[density] ?? BLOCK_SPACING.regular;
@@ -3310,6 +3314,7 @@ function DBSection(props: DBSectionProps) {
           paddingVertical: blockPad,
           paddingHorizontal: INLINE_PAD,
           width: "100%",
+          backgroundColor: c.bg,
         },
         (props as any).style,
       ]}
