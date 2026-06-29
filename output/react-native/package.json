@@ -34,7 +34,8 @@
     "@db-ux/core-components": "4.5.4",
     "@expo/vector-icons": "^14.0.0",
     "expo-font": ">=12.0.0",
-    "expo-linking": "^6.0.0"
+    "expo-linking": "^6.0.0",
+    "typescript": "^6.0.3"
   },
   "devDependencies": {
     "@db-ux/core-foundations": "4.5.4",

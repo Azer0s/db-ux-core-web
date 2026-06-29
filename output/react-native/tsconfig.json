@@ -8,15 +8,16 @@
         "experimentalDecorators": true,
         "esModuleInterop": true,
         "lib": [
+            "dom",
             "es2022"
         ],
-        "module": "commonjs",
-        "moduleResolution": "node",
+        "module": "esnext",
         "noImplicitAny": false,
         "noImplicitReturns": false,
         "noUnusedLocals": false,
         "noUnusedParameters": false,
         "outDir": "dist",
+        "rootDir": "./src",
         "removeComments": false,
         "sourceMap": true,
         "jsx": "react-native",
